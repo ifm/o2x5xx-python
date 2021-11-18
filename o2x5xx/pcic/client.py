@@ -348,7 +348,7 @@ class O2x5xxDevice(PCICV3Client):
         result = self.send_command('I{image_id}?'.format(image_id=image_id))
         return result
 
-    def request_last_image_taken_deserialized(self, image_id):
+    def request_last_image_taken_deserialized(self, image_id=1):
         """
         Request last image taken deserialized in image header and image data.
 
@@ -546,21 +546,6 @@ class O2x5xxDevice(PCICV3Client):
     def execute_synchronous_trigger(self):
         """
         Executes trigger. The result data is send synchronously.
-
-        :return: - * Trigger was executed, the device captures an image,
-                     evaluates the result and sends the process data. <br />
-                 - ! Device is busy with an evaluation
-                   | Device is in an invalid state for the command, e.g. configuration mode
-                   | Device is set to a different trigger source
-                   | No active application
-        """
-        result = self.send_command('T?')
-        result = result.decode()
-        return result
-
-    def execute_synchronous_trigger_by_ticket_number(self, ticket):
-        """
-        Executes synchronous trigger. The result data is send synchronously.
 
         :return: - * Trigger was executed, the device captures an image,
                      evaluates the result and sends the process data. <br />

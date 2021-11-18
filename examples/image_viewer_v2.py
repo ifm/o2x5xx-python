@@ -4,6 +4,8 @@ from o2x5xx import O2x5xxDevice
 from PIL import Image
 import io
 import sys
+import binascii
+import struct
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
@@ -11,6 +13,76 @@ import matplotlib.animation as animation
 
 imageWidth = 1280
 imageHeight = 960
+
+# This is the serialization format of binary data with header version 3.
+serialization_format = {
+    0x0000: ["CHUNK_TYPE", "Defines the type of the chunk.", 4],
+    0x0004: ["CHUNK_SIZE", "Size of the whole image chunk in bytes.", 4],
+    0x0008: ["HEADER_SIZE", "Number of bytes starting from 0x0000 until BINARY_DATA."
+                            "The number of bytes must be a multiple of 16, and the minimum value is 0x40 (64).", 4],
+    0x000C: ["HEADER_VERSION", "Version number of the header (=3).", 4],
+    0x0010: ["IMAGE_WIDTH", "Image width in pixel. Applies only if BINARY_DATA contains an image. "
+                            "Otherwise this is set to the length of BINARY_DATA.", 4],
+    0x0014: ["IMAGE_HEIGHT", "Image height in pixel. Applies only if BINARY_DATA contains an image. "
+                             "Otherwise this is set to 1.", 4],
+    0x0018: ["PIXEL_FORMAT", "Pixel format. Applies only to image binary data. For generic binary data "
+                             "this is set to FORMAT_8U unless specified otherwise for a particular chunk type.", 4],
+    0x001C: ["TIME_STAMP", "Timestamp in uS", 4],
+    0x0020: ["FRAME_COUNT", "Continuous frame count.", 4],
+    0x0024: ["STATUS_CODE", "This field is used to communicate errors on the device.", 4],
+    0x0028: ["TIME_STAMP_SEC", "Timestamp seconds", 4],
+    0x002C: ["TIME_STAMP_NSEC", "Timestamp nanoseconds", 4],
+    0x0030: ["META_DATA", "UTF-8 encoded null-terminated JSON object. The content of the JSON object is depending "
+                          "on the CHUNK_TYPE.", 4]}
+
+pcic_config = {
+    "elements": [
+        {
+            "id": "start_string",
+            "type": "string",
+            "value": "star"
+        },
+        {
+            "id": "delimiter",
+            "type": "string",
+            "value": ";"
+        },
+        {
+            "elements": [
+                {
+                    "id": "ID",
+                    "type": "uint8"
+                },
+                {
+                    "id": "delimiter",
+                    "type": "string",
+                    "value": ";"
+                }
+            ],
+            "id": "Images",
+            "type": "records"
+        },
+        {
+            "id": "end_string",
+            "type": "string",
+            "value": "stop"
+        },
+        {
+            "elements": [
+                {
+                    "id": "jpeg_image",
+                    "type": "blob"
+                }
+            ],
+            "id": "Images",
+            "type": "records"
+        }
+    ],
+    "format": {
+        "dataencoding": "ascii"
+    },
+    "layouter": "flexible"
+}
 
 
 class GrabO2x5xx(object):
@@ -21,52 +93,45 @@ class GrabO2x5xx(object):
         self.number_frames = None
         self.frame_ids = None
 
-    # def read_next_frames(self):
-    #     self.frames = self.sensor.request_last_image_taken_decoded(1)
-    #     self.number_frames = len(self.frames)
+    def deserialize_image_chunck(self, data):
+        results = {}
+        length = int(data.__len__())
+        data = binascii.unhexlify(data.hex())
+        counter = 0
 
-    def read_frame_ids(self):
+        while length:
+            # get header information
+            header = {}
+            for key, value in serialization_format.items():
+                hex_val = data[key: key + value[2]]
+                dec_val = struct.unpack('<i', hex_val)[0]
+                header[value[0]] = dec_val
+
+            # append header
+            results.setdefault(counter, []).append(header)
+            # append image
+            image_hex = data[header['HEADER_SIZE']:header['CHUNK_SIZE']]
+            results[counter].append(image_hex)
+
+            length -= header['CHUNK_SIZE']
+            data = data[header['CHUNK_SIZE']:]
+            counter += 1
+
+        return results
+
+    def read_next_frames(self):
+        # TODO Check with RPC which trigger state is configured
+        ticket, answer = self.sensor.read_next_answer()
+        # answer = self.sensor.execute_synchronous_trigger()
+
+        self.frames = answer[19:]
+        self.frames = self.deserialize_image_chunck(self.frames)
+        # self.frames = self.sensor.request_last_image_taken_deserialized(1)
+        self.number_frames = len(self.frames)
+
+    def upload_image_configuration(self):
         # disable all result output
         self.sensor.turn_process_interface_output_on_or_off(0)
-
-        pcic_config = {
-            "elements": [
-                {
-                    "id": "start_string",
-                    "type": "string",
-                    "value": "star"
-                },
-                {
-                    "id": "delimiter",
-                    "type": "string",
-                    "value": ";"
-                },
-                {
-                    "elements": [
-                        {
-                            "id": "ID",
-                            "type": "uint32"
-                        },
-                        {
-                            "id": "delimiter",
-                            "type": "string",
-                            "value": ";"
-                        }
-                    ],
-                    "id": "Images",
-                    "type": "records"
-                },
-                {
-                    "id": "end_string",
-                    "type": "string",
-                    "value": "stop"
-                }
-            ],
-            "format": {
-                "dataencoding": "ascii"
-            },
-            "layouter": "flexible"
-        }
 
         # format string for all images
         self.sensor.upload_process_interface_output_configuration(pcic_config)
@@ -74,9 +139,13 @@ class GrabO2x5xx(object):
         # enable result output again
         self.sensor.turn_process_interface_output_on_or_off(7)
 
-        answer = self.sensor.execute_synchronous_trigger()
-        self.frame_ids = answer.split(';')[1:-1]
+    def read_image_ids(self):
+        # TODO Check with RPC which trigger state is configured
+        ticket, answer = self.sensor.read_next_answer()
+        # answer = self.sensor.execute_synchronous_trigger()
 
+        frame_ids = answer[:19].decode()
+        self.frame_ids = frame_ids.split(';')[1:-1]
 
 # def update_fig(*args):
 #     g = args[1]
@@ -111,8 +180,17 @@ if __name__ == '__main__':
     # fig = plt.figure()
     # fig.suptitle('O2x5xx Image Viewer ({ip})'.format(ip=device.address))
     grabber = GrabO2x5xx(device)
+
+    # config = device.retrieve_current_process_interface_configuration()
+
+    # Upload the process interface configuration for retrieving image ids and image data
+    grabber.upload_image_configuration()
+
+    # Read the image ids
+    grabber.read_image_ids()
+
+    # Read next frames
     grabber.read_next_frames()
-    grabber.read_frame_ids()
 
     # Subplots are organized in a rows x cols grid
     cols = 1
@@ -142,6 +220,7 @@ if __name__ == '__main__':
         grabber.frame_ids = [1, 2, 3, 4, 5]
         if grabber.frame_ids:
             ax.set_title('I{id}'.format(id=grabber.frame_ids[k]))
+
 
     # # add every single subplot to the figure with a for loop
     # ax_list = []
@@ -224,6 +303,7 @@ if __name__ == '__main__':
             # subplots[k] = ax
 
         return axs
+
 
     # ani = animation.FuncAnimation(fig, update_fig, interval=50, blit=True, fargs=[grabber, ax_list])
     ani = animation.FuncAnimation(fig, func=update_fig, interval=50, blit=True)
