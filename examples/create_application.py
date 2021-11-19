@@ -15,20 +15,11 @@ session = device.requestSession()
 session.startEdit()
 applicationIndex = session.edit.createApplication()
 application = session.edit.editApplication(applicationIndex)
-session.edit.stopEditingApplication()
 
 # configure the application to
-# - double exposure
-application.imagerConfig.changeType("under5m_moderate")
 # - free-run at 10 Hz
 application.setParameter("TriggerMode", "1")
-application.imagerConfig.setParameter("FrameRate", "10")
-# and perform an auto-exposure run to determine
-# exposure times
-application.imagerConfig.startCalculateExposureTime()
-# wait until the auto-exposure process has finished
-while application.imagerConfig.getProgressCalculateExposureTime() < 1.0:
-    time.sleep(1)
+application.setParameter("FrameRate", "10")
 # name and save the application and stop editing
 application.setParameter("Name", "o2x5xx-python example application")
 application.save()
