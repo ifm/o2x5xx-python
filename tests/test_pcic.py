@@ -1,12 +1,18 @@
 from unittest import TestCase
 
-import o3d3xx
-from .config import *
+from o2x5xx import O2x5xxDevice
+
 
 class TestPcic(TestCase):
 	def setUp(self):
-		self.pcic = o3d3xx.PCICV3Client(deviceAddress, 50010)
+		self.sensor = O2x5xxDevice('192.168.0.44', 50010)
 
-	def test_pcic_version(self):
-		result = self.pcic.sendCommand("V?")
-		self.assertEqual(result, b"03 01 04")
+	def test_sensor_answer_1(self):
+		ticket, answer = self.sensor.read_next_answer()
+		answer = answer.decode()
+		self.assertEqual(answer, "star;1;4;5;6;7;stop")
+
+	def test_sensor_answer_2(self):
+		ticket, answer = self.sensor.read_next_answer()
+		answer = answer.decode()
+		self.assertEqual(answer, "star;11111;4;5;6;7;stop")

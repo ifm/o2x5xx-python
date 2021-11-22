@@ -1,6 +1,7 @@
 from __future__ import (absolute_import, division, print_function, unicode_literals)
 # from builtins import *
 from o2x5xx import O2x5xxDevice
+from o2x5xx.static.formats import serialization_format
 import io
 import sys
 import binascii
@@ -9,76 +10,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import matplotlib.animation as animation
-
-# This is the serialization format of binary data with header version 3.
-serialization_format = {
-    0x0000: ["CHUNK_TYPE", "Defines the type of the chunk.", 4],
-    0x0004: ["CHUNK_SIZE", "Size of the whole image chunk in bytes.", 4],
-    0x0008: ["HEADER_SIZE", "Number of bytes starting from 0x0000 until BINARY_DATA."
-                            "The number of bytes must be a multiple of 16, and the minimum value is 0x40 (64).", 4],
-    0x000C: ["HEADER_VERSION", "Version number of the header (=3).", 4],
-    0x0010: ["IMAGE_WIDTH", "Image width in pixel. Applies only if BINARY_DATA contains an image. "
-                            "Otherwise this is set to the length of BINARY_DATA.", 4],
-    0x0014: ["IMAGE_HEIGHT", "Image height in pixel. Applies only if BINARY_DATA contains an image. "
-                             "Otherwise this is set to 1.", 4],
-    0x0018: ["PIXEL_FORMAT", "Pixel format. Applies only to image binary data. For generic binary data "
-                             "this is set to FORMAT_8U unless specified otherwise for a particular chunk type.", 4],
-    0x001C: ["TIME_STAMP", "Timestamp in uS", 4],
-    0x0020: ["FRAME_COUNT", "Continuous frame count.", 4],
-    0x0024: ["STATUS_CODE", "This field is used to communicate errors on the device.", 4],
-    0x0028: ["TIME_STAMP_SEC", "Timestamp seconds", 4],
-    0x002C: ["TIME_STAMP_NSEC", "Timestamp nanoseconds", 4],
-    0x0030: ["META_DATA", "UTF-8 encoded null-terminated JSON object. The content of the JSON object is depending "
-                          "on the CHUNK_TYPE.", 4]}
-
-pcic_config = {
-    "elements": [
-        {
-            "id": "start_string",
-            "type": "string",
-            "value": "star"
-        },
-        {
-            "id": "delimiter",
-            "type": "string",
-            "value": ";"
-        },
-        {
-            "elements": [
-                {
-                    "id": "ID",
-                    "type": "uint8"
-                },
-                {
-                    "id": "delimiter",
-                    "type": "string",
-                    "value": ";"
-                }
-            ],
-            "id": "Images",
-            "type": "records"
-        },
-        {
-            "id": "end_string",
-            "type": "string",
-            "value": "stop"
-        },
-        {
-            "elements": [
-                {
-                    "id": "jpeg_image",
-                    "type": "blob"
-                }
-            ],
-            "id": "Images",
-            "type": "records"
-        }
-    ],
-    "format": {
-        "dataencoding": "ascii"
-    },
-    "layouter": "flexible"
-}
 
 imageWidth = 1280
 imageHeight = 960

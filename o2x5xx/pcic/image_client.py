@@ -1,172 +1,115 @@
 from __future__ import (absolute_import, division, print_function)
+from o2x5xx.pcic.client import O2x5xxDevice
 from builtins import *
+from o2x5xx.static.formats import serialization_format
+from o2x5xx.static.configs import images_config
+import binascii
 import struct
-import array
+import io
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import matplotlib.animation as animation
 
-from o3d3xx.pcic.client import PCICV3Client
-from o3d3xx.pcic.cwrappers import IntrinsicCalibration, ExtrinsicCalibration
 
-
-class ImageClient(PCICV3Client):
+class ImageClient(O2x5xxDevice):
 	def __init__(self, address, port):
 		super(ImageClient, self).__init__(address, port)
+
 		# disable all result output
-		self.sendCommand("p0")
+		self.turn_process_interface_output_on_or_off(0)
+
 		# format string for all images
-		pcicConfig = "{ \"layouter\": \"flexible\", \"format\": { \"dataencoding\": \"ascii\" }, \"elements\": [ { \"type\": \"string\", \"value\": \"star\", \"id\": \"start_string\" }, { \"type\": \"blob\", \"id\": \"normalized_amplitude_image\" }, { \"type\": \"blob\", \"id\": \"distance_image\" }, { \"type\": \"blob\", \"id\": \"x_image\" }, { \"type\": \"blob\", \"id\": \"y_image\" }, { \"type\": \"blob\", \"id\": \"z_image\" }, { \"type\": \"blob\", \"id\": \"confidence_image\" }, { \"type\": \"blob\", \"id\": \"diagnostic_data\" }, { \"type\": \"blob\", \"id\": \"extrinsic_calibration\" }, { \"type\": \"blob\", \"id\": \"intrinsic_calibration\" },{ \"type\": \"blob\", \"id\": \"inverse_intrinsic_calibration\" },{ \"type\": \"string\", \"value\": \"stop\", \"id\": \"end_string\" } ] }"
-		answer = self.sendCommand("c%09d%s" % (len(pcicConfig), pcicConfig))
-		if str(answer, 'utf-8') != "*":
+		answer = self.upload_process_interface_output_configuration(images_config)
+		if answer != "*":
 			raise
+
 		# enable result output again
-		self.sendCommand("p1")
+		self.turn_process_interface_output_on_or_off(1)
 
+		# read the image ids
+		self.image_IDs = self.read_image_ids()
 
-	def readNextFrame(self):
-		result = {}
+		# read first frames
+		self.frames = []
+		self.read_next_frames()
 
-		# look for asynchronous output
-		ticket, answer = self.readNextAnswer()
+	@property
+	def number_images(self):
+		return self.image_IDs.__len__()
+
+	def calculate_rows_and_cols_for_subplots(self):
+		# Subplots are organized in a rows x cols grid
+		cols = 1
+		if len(self.image_IDs) > cols:
+			cols = 2
+		if len(self.image_IDs) > cols:
+			cols = 3
+
+		# Compute rows required
+		rows = len(self.image_IDs) // cols
+		rows += len(self.image_IDs) % cols
+
+		return rows, cols
+
+	def read_image_ids(self):
+		ticket, answer = self.read_next_answer()
+
 		if ticket == b"0000":
-			answerIndex = 0
+			frame_ids = answer[:19].decode()
+			return frame_ids.split(';')[1:-1]
 
-			# read start sequence
-			data = answer[answerIndex:answerIndex+4]
-			answerIndex += 4
-			if self.debugFull == True:
-				print('Read 4 Bytes start sequence: "%s"' % data)
+	@staticmethod
+	def deserialize_image_chunk(data):
+		results = {}
+		length = int(data.__len__())
+		data = binascii.unhexlify(data.hex())
+		counter = 0
 
-			if data != b"star":
-				print(data)
-				raise
+		while length:
+			# get header information
+			header = {}
+			for key, value in serialization_format.items():
+				hex_val = data[key: key + value[2]]
+				dec_val = struct.unpack('<i', hex_val)[0]
+				header[value[0]] = dec_val
 
-			chunkCounter = 1
+			# append header
+			results.setdefault(counter, []).append(header)
+			# append image
+			image_hex = data[header['HEADER_SIZE']:header['CHUNK_SIZE']]
+			results[counter].append(image_hex)
 
-			while True:
-				# read next 4 bytes
-				data = answer[answerIndex:answerIndex+4]
-				answerIndex += 4
-				
-				# stop if frame finished
-				if data == b"stop":
-					break
+			length -= header['CHUNK_SIZE']
+			data = data[header['CHUNK_SIZE']:]
+			counter += 1
 
-				# else read rest of image header
-				data += answer[answerIndex:answerIndex+12]
-				answerIndex += 12
-				if self.debugFull == True:
-					print('Read %d Bytes image header: "%r"' % (len(data), data))
+		return results
 
-				# extract information about chunk
-				chunkType, chunkSize, headerSize, headerVersion = struct.unpack('IIII', bytes(data))
+	def read_next_frames(self):
+		# look for asynchronous output
+		ticket, answer = self.read_next_answer()
 
-				# read rest of chunk header
-				data += answer[answerIndex:answerIndex+headerSize-16]
-				answerIndex += headerSize-16
+		if ticket == b"0000":
+			result = self.deserialize_image_chunk(data=answer[19:])
 
-				if headerVersion == 1:
-					chunkType, chunkSize, headerSize, headerVersion, imageWidth, imageHeight, pixelFormat, timeStamp, frameCount = struct.unpack('IIIIIIIII', bytes(data))
-				elif headerVersion == 2:
-					chunkType, chunkSize, headerSize, headerVersion, imageWidth, imageHeight, pixelFormat, timeStamp, frameCount, statusCode, timeStampSec, timeStampNsec = struct.unpack('IIIIIIIIIIII', bytes(data))
-				else:
-					print("Unknown chunk header version %d!" % headerVersion)
+			self.frames = [mpimg.imread(frame, format='jpg') for frame in result]
 
-				if self.debug == True:
-					print('''Data chunk %d:
-	Chunk type: %d
-	Chunk size: %d
-	Header size: %d
-	Header version: %d
-	Image width: %d
-	Image height: %d
-	Pixel format: %d
-	Time stamp: %d
-	Frame counter: %d''' % (chunkCounter, chunkType, chunkSize, headerSize, headerVersion, imageWidth, imageHeight, pixelFormat, timeStamp, frameCount))
+	def make_figure(self, idx):
+		"""
+		Function for making figure and image ID as subtitle.
 
-				# read chunk data
-				data = answer[answerIndex:answerIndex+chunkSize-headerSize]
-				answerIndex += chunkSize-headerSize
+		:return:
+		"""
+		fig = plt.figure()
+		fig.suptitle('Image ({})'.format(self.image_IDs[idx]))
+		ax = fig.add_subplot(1, 1, 1)
 
-				# distinguish pixel type
-				if pixelFormat == 0:
-					image = array.array('B', bytes(data))
-				elif pixelFormat == 1:
-					image = array.array('b', bytes(data))
-				elif pixelFormat == 2:
-					image = array.array('H', bytes(data))
-				elif pixelFormat == 3:
-					image = array.array('h', bytes(data))
-				elif pixelFormat == 4:
-					image = array.array('I', bytes(data))
-				elif pixelFormat == 5:
-					image = array.array('i', bytes(data))
-				elif pixelFormat == 6:
-					image = array.array('f', bytes(data))
-				elif pixelFormat == 8:
-					image = array.array('d', bytes(data))
-				else:
-					image = None
+		image = mpimg.imread(io.BytesIO(self.frames[idx][1]), format='jpg')
+		im = ax.imshow(image, animated=True, cmap='gray', aspect='equal')
 
-				# distance image
-				if chunkType == 100:
-					result['distance'] = image
+		return fig, ax, im
 
-				# amplitude image
-				elif chunkType == 101:
-					result['amplitude'] = image
-
-				# intensity image
-				elif chunkType == 102:
-					result['intensity'] = image
-
-				# raw amplitude image
-				elif chunkType == 103:
-					result['rawAmplitude'] = image
-
-				# X image
-				elif chunkType == 200:
-					result['x'] = image
-
-				# Y image
-				elif chunkType == 201:
-					result['y'] = image
-
-				# Z image
-				elif chunkType == 202:
-					result['z'] = image
-
-				# confidence image
-				elif chunkType == 300:
-					result['confidence'] = image
-
-				# raw image
-				elif chunkType == 301:
-					if 'raw' not in result:
-						result['raw'] = []
-					result['raw'].append(image)
-
-				# diagnostic data
-				elif chunkType == 302:
-					diagnosticData = {}
-					payloadSize = chunkSize - headerSize
-					# the diagnostic data blob contains at least four temperatures plus the evaluation time
-					if payloadSize >= 20:
-						illuTemp, frontendTemp1, frontendTemp2, imx6Temp, evalTime = struct.unpack('=iiiiI', bytes(data[0:20]))
-						diagnosticData = dict([('illuTemp', illuTemp/10.0), ('frontendTemp1', frontendTemp1/10.0), ('frontendTemp2', frontendTemp2/10.0), ('imx6Temp', imx6Temp/10.0), ('evalTime', evalTime)])
-					# check whether framerate is also provided
-					if payloadSize == 24:
-						diagnosticData['frameRate'] = struct.unpack('=I', bytes(data[20:24]))[0]
-					result['diagnostic'] = diagnosticData
-
-				elif chunkType == 400:
-					result['extrinsicCalibration'] = ExtrinsicCalibration.from_buffer(data)
-
-				elif chunkType == 401:
-					result['intrinsicCalibration'] = IntrinsicCalibration.from_buffer(data)
-
-				elif chunkType == 402:
-					result['inverseIntrinsicCalibration'] = IntrinsicCalibration.from_buffer(data)
-
-				chunkCounter = chunkCounter + 1
-
-		# return amplitudeImage, intensityImage, distanceImage, xImage, yImage, zImage, confidenceImage, diagnosticData, rawImage, rawAmplitudeImage
-		return result
+	def set_new_frame(self, idx, im):
+		image = mpimg.imread(io.BytesIO(self.frames[idx][1]), format='jpg')
+		im = plt.imshow(image, animated=True, cmap='gray', aspect='equal')
+		return im

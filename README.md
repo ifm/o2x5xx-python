@@ -5,7 +5,6 @@ A Python 2/3 library for ifm efector O2x5xx 2D sensors
 
 Features
 --------
-* easy XMLRPC interface with integrated session handling
 * PCIC V3 client for result data transfer
 
 Prerequisites
@@ -151,7 +150,7 @@ x   | x   | gated_software_trigger_on_or_off | -
 x   | x   | request_device_information | -
 x   | x   | return_a_list_of_available_commands | -
 o   | o   | request_last_image_taken | uncompressed images possible? answer is always !
-x   | x   | request_last_image_taken_decoded | TODO: Decode the split in case of multiple images
+x   | x   | request_last_image_taken_decoded | -
 x   | x   | overwrite_data_of_a_string | -
 x   | x   | read_string_from_defined_container | -
 x   | x   | return_the_current_session_id | -
