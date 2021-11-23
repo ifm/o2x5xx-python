@@ -1,9 +1,11 @@
-from o2x5xx.static.formats import error_codes
+from o2x5xx.static.formats import error_codes, serialization_format
+import matplotlib.image as mpimg
 import binascii
 import socket
 import struct
 import json
 import re
+import io
 
 
 class Client(object):
@@ -110,6 +112,7 @@ class O2x5xxDevice(PCICV3Client):
         """
         command = 'a' + str(number).zfill(2)
         result = self.send_command(command)
+        result = result.decode()
         return result
 
     def occupancy_of_application_list(self):
@@ -286,16 +289,21 @@ class O2x5xxDevice(PCICV3Client):
         result = self.send_command('I{image_id}?'.format(image_id=image_id))
         return result
 
-    def request_last_image_taken_deserialized(self, image_id=1):
+    def request_last_image_taken_deserialized(self, image_id=1, datatype='ndarray'):
         """
-        Request last image taken deserialized in image header and image data.
+        Request last image taken deserialized in image header and image data. Image data can requested as bytes
+        or decoded as ndarray datatype.
 
         :param image_id: (int) 2 digits for the image type <br />
                          1: all JPEG images <br />
                          2: all uncompressed images
+        :param datatype: (str) image output as hex or ndarray datatype <br />
+                 bytes: image(s) as bytes datatype <br />
+                 ndarray: image(s) as ndarray datatype
         :return: Syntax: [&lt;header>,&lt;image data>] <br />
                  - &lt;header> (dict) header of the image deserialized as dict object <br />
-                 - &lt;image data> (bytearray) image data / result data. The data is encapsulated in an image chunk. <br />
+                 - &lt;image data> image data / result data. The data is encapsulated
+                 in an image chunk if bytes as datatype is selected. <br />
                  - ! No image available
                    | Wrong ID <br />
                  - ? Invalid command length
@@ -318,7 +326,14 @@ class O2x5xxDevice(PCICV3Client):
             results.setdefault(counter, []).append(header)
             # append image
             image_hex = data[header['HEADER_SIZE']:header['CHUNK_SIZE']]
-            results[counter].append(image_hex)
+            if datatype == 'ndarray':
+                image = mpimg.imread(io.BytesIO(image_hex), format='jpg')
+                results[counter].append(image)
+            elif datatype == 'bytes':
+                results[counter].append(image_hex)
+            else:
+                raise ValueError("{} is not a valid datatype. "
+                                 "Use either 'bytes' or 'ndarray' as datatype".format(datatype))
 
             length -= header['CHUNK_SIZE']
             data = data[header['CHUNK_SIZE']:]
@@ -334,7 +349,7 @@ class O2x5xxDevice(PCICV3Client):
         :param data: (string) string of a maximum size of 256 Bytes
         :return: - * Command was successful <br />
                  - ! Invalid argument or invalid state (other than run mode)
-                   | Not existing string with input-container-ID <br />
+                   | Not existing element with input-container-ID in logic layer <br />
                  - ? Syntax error
         """
         if str(container_id).isnumeric():
@@ -354,7 +369,7 @@ class O2x5xxDevice(PCICV3Client):
                  - &lt;length>: 9 digits as decimal value for the data length <br />
                  - &lt;data>: content of byte array <br />
                  - ! Invalid argument or invalid state (other than run mode)
-                   | Not existing string with input-container-ID <br />
+                   | Not existing element with input-container-ID in logic layer <br />
                  - ? Syntax error
         """
         if str(container_id).isnumeric():
@@ -470,6 +485,7 @@ class O2x5xxDevice(PCICV3Client):
     def execute_asynchronous_trigger(self):
         """
         Executes trigger. The result data is send asynchronously.
+        Only compatible with configured trigger source "Process Interface" on the sensor.
 
         :return: - * Trigger was executed, the device captures an image and evaluates the result. <br />
                  - ! Device is busy with an evaluation
@@ -484,9 +500,9 @@ class O2x5xxDevice(PCICV3Client):
     def execute_synchronous_trigger(self):
         """
         Executes trigger. The result data is send synchronously.
+        Only compatible with configured trigger source "Process Interface" on the sensor.
 
-        :return: - * Trigger was executed, the device captures an image,
-                     evaluates the result and sends the process data. <br />
+        :return: - (str) decoded data output of process interface
                  - ! Device is busy with an evaluation
                    | Device is in an invalid state for the command, e.g. configuration mode
                    | Device is set to a different trigger source

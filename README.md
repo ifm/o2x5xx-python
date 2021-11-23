@@ -1,7 +1,7 @@
-o3d3xx-python
+o2x5xx-python
 =============
 
-A Python 2/3 library for ifm efector O2x5xx 2D sensors
+A Python 2/3 library for ifm efector O2x5xx 2D sensors (O2D5xx / O2I5xx)
 
 Features
 --------

@@ -1,6 +1,6 @@
 from __future__ import (absolute_import, division, print_function)
-from o2x5xx.pcic.client import O2x5xxDevice
 from builtins import *
+from o2x5xx.pcic.client import O2x5xxDevice
 from o2x5xx.static.formats import serialization_format
 from o2x5xx.static.configs import images_config
 import binascii
@@ -8,7 +8,6 @@ import struct
 import io
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-import matplotlib.animation as animation
 
 
 class ImageClient(O2x5xxDevice):
@@ -55,7 +54,8 @@ class ImageClient(O2x5xxDevice):
 		ticket, answer = self.read_next_answer()
 
 		if ticket == b"0000":
-			frame_ids = answer[:19].decode()
+			delimiter = str(answer).find('stop')
+			frame_ids = answer[:delimiter-12].decode()
 			return frame_ids.split(';')[1:-1]
 
 	@staticmethod
@@ -77,7 +77,8 @@ class ImageClient(O2x5xxDevice):
 			results.setdefault(counter, []).append(header)
 			# append image
 			image_hex = data[header['HEADER_SIZE']:header['CHUNK_SIZE']]
-			results[counter].append(image_hex)
+			image = mpimg.imread(io.BytesIO(image_hex), format='jpg')
+			results[counter].append(image)
 
 			length -= header['CHUNK_SIZE']
 			data = data[header['CHUNK_SIZE']:]
@@ -90,9 +91,9 @@ class ImageClient(O2x5xxDevice):
 		ticket, answer = self.read_next_answer()
 
 		if ticket == b"0000":
-			result = self.deserialize_image_chunk(data=answer[19:])
-
-			self.frames = [mpimg.imread(frame, format='jpg') for frame in result]
+			delimiter = str(answer).find('stop')
+			result = self.deserialize_image_chunk(data=answer[delimiter-8:])
+			self.frames = [result[i][1] for i in result]
 
 	def make_figure(self, idx):
 		"""
@@ -101,15 +102,9 @@ class ImageClient(O2x5xxDevice):
 		:return:
 		"""
 		fig = plt.figure()
-		fig.suptitle('Image ({})'.format(self.image_IDs[idx]))
+		fig.suptitle('Image: I{}'.format(self.image_IDs[idx]))
 		ax = fig.add_subplot(1, 1, 1)
 
-		image = mpimg.imread(io.BytesIO(self.frames[idx][1]), format='jpg')
-		im = ax.imshow(image, animated=True, cmap='gray', aspect='equal')
+		im = ax.imshow(self.frames[idx], animated=True, cmap='gray', aspect='equal')
 
 		return fig, ax, im
-
-	def set_new_frame(self, idx, im):
-		image = mpimg.imread(io.BytesIO(self.frames[idx][1]), format='jpg')
-		im = plt.imshow(image, animated=True, cmap='gray', aspect='equal')
-		return im
