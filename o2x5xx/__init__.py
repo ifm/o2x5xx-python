@@ -1,3 +1,2 @@
-from .rpc import *
 from .pcic import *
-
+from .static import *
