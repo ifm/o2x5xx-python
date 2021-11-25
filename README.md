@@ -44,6 +44,11 @@
         * [set_current_protocol_version(version)](###set_current_protocol_version(version))
         * [request_current_protocol_version()](###request_current_protocol_version())
         * [turn_state_of_view_indicator_on_or_off(state, duration)](#HeadingText "title")
+      * [class ImageClient](##class ImageClient)
+        * [number_images()](###number_images())
+        * [read_image_ids()](###read_image_ids())
+        * [read_next_frames()](###read_next_frames())
+        * [make_figure()](###make_figure())
       * [Unit Tests](#Unit-Tests)
       * [Source Styleguide](#Source Styleguide)
 
@@ -492,6 +497,40 @@ For a more detailed explanation of the function take a look on the docstring doc
                    | Wrong duration
                  - ? Invalid command length
 
+## class ImageClient (inheriting class O2x5xxDevice)
+
+### number_images()
+
+		A function for which returns the number of images from application.
+
+		:return: (int) number of images
+
+### read_image_ids()
+
+		A function for reading the PCIC image output and parsing the image IDs.
+		The image IDs are stored in property self.image_IDs
+
+		:return: list of image ids
+
+### read_next_frames()
+
+		Function for reading next asynchronous frames.
+		Frames are stored in property self.frames
+
+		:return: None
+
+### make_figure()
+
+		Function for making figure object and using parsed image ID as subtitle.
+
+		:param idx: (int) list index of self.image.IDs property
+					e.g. idx == 0 would read string value '2' from self.image.IDs = ['2', '4']
+
+		:return: Syntax: [<fig>, <ax>, <im>]
+						- <fig>: matplotlib figure object
+						- <ax>: AxesSubplot instance of figure object
+						- <im>: AxesImage instance of figure object
+
 # Unit Tests
 
 ## FW version: 1.22.9323
@@ -508,7 +547,7 @@ x   | x   | gated_software_trigger_on_or_off | -
 x   | x   | request_device_information | -
 x   | x   | return_a_list_of_available_commands | -
 x   | x   | request_last_image_taken | uncompressed images not available due to high data size with 5 images
-x   | x   | request_last_image_taken_deserialzied | -
+x   | x   | request_last_image_taken_deserialized | -
 x   | x   | overwrite_data_of_a_string | -
 x   | x   | read_string_from_defined_container | -
 x   | x   | return_the_current_session_id | -
@@ -536,7 +575,7 @@ x   | x   | gated_software_trigger_on_or_off | -
 x   | x   | request_device_information | -
 x   | x   | return_a_list_of_available_commands | -
 x   | x   | request_last_image_taken | uncompressed images not available due to high data size with 5 images
-x   | x   | request_last_image_taken_deserialzied | -
+x   | x   | request_last_image_taken_deserialized | -
 x   | x   | overwrite_data_of_a_string | -
 x   | x   | read_string_from_defined_container | -
 x   | x   | return_the_current_session_id | -

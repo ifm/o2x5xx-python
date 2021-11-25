@@ -37,41 +37,23 @@ class ImageClient(O2x5xxDevice):
 		"""
 		A function for which returns the number of images from application.
 
-		:return:
+		:return: (int) number of images
 		"""
 		return self.image_IDs.__len__()
-
-	def calculate_rows_and_cols_for_subplots(self):
-		"""
-		A function for calculating the required rows and rows for subplots.
-
-		:return:
-		"""
-		# Subplots are organized in a rows x cols grid
-		cols = 1
-		if len(self.image_IDs) > cols:
-			cols = 2
-		if len(self.image_IDs) > cols:
-			cols = 3
-
-		# Compute rows required
-		rows = len(self.image_IDs) // cols
-		rows += len(self.image_IDs) % cols
-
-		return rows, cols
 
 	def read_image_ids(self):
 		"""
 		A function for reading the PCIC image output and parsing the image IDs.
+		The image IDs are stored in property self.image_IDs
 
-		:return:
+		:return: list of image ids
 		"""
 		ticket, answer = self.read_next_answer()
 
 		if ticket == b"0000":
 			delimiter = str(answer).find('stop')
-			frame_ids = answer[:delimiter-12].decode()
-			return frame_ids.split(';')[1:-1]
+			ids = answer[:delimiter-12].decode()
+			return ids.split(';')[1:-1]
 
 	@staticmethod
 	def _deserialize_image_chunk(data):
@@ -79,7 +61,7 @@ class ImageClient(O2x5xxDevice):
 		Function for deserializing the PCIC image output.
 
 		:param data: PCIC image output
-		:return:
+		:return: deserialized results
 		"""
 		results = {}
 		length = int(data.__len__())
@@ -110,24 +92,33 @@ class ImageClient(O2x5xxDevice):
 	def read_next_frames(self):
 		"""
 		Function for reading next asynchronous frames.
+		Frames are stored in property self.frames
 
-		:return:
+		:return: None
 		"""
 		# look for asynchronous output
 		ticket, answer = self.read_next_answer()
 
 		if ticket == b"0000":
 			delimiter = str(answer).find('stop')
-			# result = self.request_last_image_taken_deserialized()
 			result = self._deserialize_image_chunk(data=answer[delimiter-8:])
 			self.frames = [result[i][1] for i in result]
 
 	def make_figure(self, idx):
 		"""
-		Function for making figure and image ID as subtitle.
+		Function for making figure object and using parsed image ID as subtitle.
 
-		:return:
+		:param idx: (int) list index of self.image.IDs property <br />
+					e.g. idx == 0 would read string value '2'
+					from self.image.IDs = ['2', '4']
+
+		:return: Syntax: [&lt;fig>, &lt;ax>, &lt;im>] <br />
+						- &lt;fig>: matplotlib figure object <br />
+						- &lt;ax>: AxesSubplot instance of figure object <br />
+						- &lt;im>: AxesImage instance of figure object
 		"""
+		if idx+1 > self.number_images:
+			raise ValueError("Only {} images available. Use an idx value between 0 and {}".format(self.number_images, self.number_images-1))
 		fig = plt.figure()
 		fig.suptitle('Image: I{}'.format(self.image_IDs[idx]))
 		ax = fig.add_subplot(1, 1, 1)
