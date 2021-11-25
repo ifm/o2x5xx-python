@@ -74,7 +74,7 @@ class PCICV3Client(Client):
 
     def send_command(self, cmd):
         """
-        Send a command to the device with 1000 as ticket number. The length and syntax
+        Send a command to the device with 1000 as default ticket number. The length and syntax
         of the command is calculated and generated automatically.
 
         :param cmd: (string) Command which you want to send to the device.
@@ -298,8 +298,8 @@ class O2x5xxDevice(PCICV3Client):
                          1: all JPEG images <br />
                          2: all uncompressed images
         :param datatype: (str) image output as hex or ndarray datatype <br />
-                 bytes: image(s) as bytes datatype <br />
-                 ndarray: image(s) as ndarray datatype
+                         bytes: image(s) as bytes datatype <br />
+                         ndarray: image(s) as ndarray datatype
         :return: Syntax: [&lt;header>,&lt;image data>] <br />
                  - &lt;header> (dict) header of the image deserialized as dict object <br />
                  - &lt;image data> image data / result data. The data is encapsulated

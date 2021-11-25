@@ -34,9 +34,19 @@ class ImageClient(O2x5xxDevice):
 
 	@property
 	def number_images(self):
+		"""
+		A function for which returns the number of images from application.
+
+		:return:
+		"""
 		return self.image_IDs.__len__()
 
 	def calculate_rows_and_cols_for_subplots(self):
+		"""
+		A function for calculating the required rows and rows for subplots.
+
+		:return:
+		"""
 		# Subplots are organized in a rows x cols grid
 		cols = 1
 		if len(self.image_IDs) > cols:
@@ -51,6 +61,11 @@ class ImageClient(O2x5xxDevice):
 		return rows, cols
 
 	def read_image_ids(self):
+		"""
+		A function for reading the PCIC image output and parsing the image IDs.
+
+		:return:
+		"""
 		ticket, answer = self.read_next_answer()
 
 		if ticket == b"0000":
@@ -59,7 +74,13 @@ class ImageClient(O2x5xxDevice):
 			return frame_ids.split(';')[1:-1]
 
 	@staticmethod
-	def deserialize_image_chunk(data):
+	def _deserialize_image_chunk(data):
+		"""
+		Function for deserializing the PCIC image output.
+
+		:param data: PCIC image output
+		:return:
+		"""
 		results = {}
 		length = int(data.__len__())
 		data = binascii.unhexlify(data.hex())
@@ -87,12 +108,18 @@ class ImageClient(O2x5xxDevice):
 		return results
 
 	def read_next_frames(self):
+		"""
+		Function for reading next asynchronous frames.
+
+		:return:
+		"""
 		# look for asynchronous output
 		ticket, answer = self.read_next_answer()
 
 		if ticket == b"0000":
 			delimiter = str(answer).find('stop')
-			result = self.deserialize_image_chunk(data=answer[delimiter-8:])
+			# result = self.request_last_image_taken_deserialized()
+			result = self._deserialize_image_chunk(data=answer[delimiter-8:])
 			self.frames = [result[i][1] for i in result]
 
 	def make_figure(self, idx):
