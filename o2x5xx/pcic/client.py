@@ -354,7 +354,7 @@ class O2x5xxDevice(PCICV3Client):
         """
         if str(container_id).isnumeric():
             container_id = str(container_id).zfill(2)
-        cmd = 'j' + container_id + str(len(data)) + data
+        cmd = 'j' + container_id + str(len(data)).zfill(9) + data
         result = self.send_command(cmd)
         result = result.decode()
         return result

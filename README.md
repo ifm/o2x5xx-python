@@ -67,15 +67,17 @@ In case of any issues or if you want to report a bug please [contact our](mailto
 
 # Prerequisites
 
-Usage of examples requires packages listed in the requirements.txt file. Install the package with
-
+Usage of examples requires packages listed in the requirements.txt file. Install the packages with
 
     $ pip install -r requirements.txt
 
+You can also install the package offline with following command
+
+    $ pip install --no-index --find-links ./packages -r requirements.txt
+
 # Installation
 
-Install the package with
-
+You can install the package with
 
     $ python setup.py install
 
@@ -532,6 +534,34 @@ For a more detailed explanation of the function take a look on the docstring doc
 						- <im>: AxesImage instance of figure object
 
 # Unit Tests
+
+## FW version: 1.27.9941
+
+O2D5xx | O2I5xx | tested function | comment
+-------- | -------- | -------- | --------
+x   | x   | activate_application | -
+x   | x   | application_list | -
+x   | x   | upload_pcic_output_configuration | -
+x   | x   | retrieve_current_process_interface_configuration | -
+x   | x   | request_current_error_state | -
+x   | x   | request_current_error_state_decoded | -
+x   | x   | gated_software_trigger_on_or_off | -
+x   | x   | request_device_information | -
+x   | x   | return_a_list_of_available_commands | -
+x   | x   | request_last_image_taken | uncompressed images not available due to high data size with 5 images
+x   | x   | request_last_image_taken_deserialized | -
+x   | x   | overwrite_data_of_a_string | -
+x   | x   | read_string_from_defined_container | -
+x   | x   | return_the_current_session_id | -
+x   | x   | set_logic_state_of_a_id | -
+x   | x   | request_state_of_a_id | Reading io states requires element in logic layer
+x   | x   | turn_process_interface_output_on_or_off | -
+x   | x   | request_current_decoding_statistics | -
+x   | x   | execute_asynchronous_trigger | -
+x   | x   | execute_synchronous_trigger | -
+x   | x   | set_current_protocol_version | -
+x   | x   | request_current_protocol_version | -
+x   | x   | turn_state_of_view_indicator_on_or_off | only available for O2I5xx sensors
 
 ## FW version: 1.22.9323
 
