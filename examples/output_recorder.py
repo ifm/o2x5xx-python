@@ -9,6 +9,8 @@ COUNTER = 0
 
 
 def end_of_runtime(start, duration):
+    if duration == -1:
+        return False
     current_time = time.time()
     end_of_time = start + duration
     if end_of_time < current_time:
