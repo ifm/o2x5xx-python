@@ -459,7 +459,7 @@ class O2x5xxDevice(PCICV3Client):
                  - ! &lt;state>: contains wrong value <br />
                  - ? Invalid command length
         """
-        result = self.send_command('p{state}'.format(state=state))
+        result = self.send_command('p{state}'.format(state=str(state)))
         result = result.decode()
         return result
 
