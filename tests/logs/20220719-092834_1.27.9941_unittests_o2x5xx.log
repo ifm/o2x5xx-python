@@ -1,0 +1,28 @@
+test_activate_application (__main__.TestPCIC) ... ok
+test_execute_asynchronous_trigger (__main__.TestPCIC) ... ok
+test_execute_synchronous_trigger (__main__.TestPCIC) ... ok
+test_gated_software_trigger_on_or_off (__main__.TestPCIC) ... ok
+test_occupancy_of_application_list (__main__.TestPCIC) ... ok
+test_overwrite_data_of_a_string (__main__.TestPCIC) ... ok
+test_read_string_from_defined_container (__main__.TestPCIC) ... ok
+test_request_current_decoding_statistics (__main__.TestPCIC) ... ok
+test_request_current_error_state (__main__.TestPCIC) ... ok
+test_request_current_error_state_decoded (__main__.TestPCIC) ... ok
+test_request_current_protocol_version (__main__.TestPCIC) ... ok
+test_request_device_information (__main__.TestPCIC) ... ok
+test_request_last_image_taken (__main__.TestPCIC) ... ok
+test_request_multiple_images_taken (__main__.TestPCIC) ... ok
+test_request_multiple_images_taken_deserialized (__main__.TestPCIC) ... ok
+test_request_state_of_an_id (__main__.TestPCIC) ... ok
+test_retrieve_current_process_interface_configuration (__main__.TestPCIC) ... ok
+test_return_a_list_of_available_commands (__main__.TestPCIC) ... ok
+test_return_the_current_session_id (__main__.TestPCIC) ... ok
+test_set_current_protocol_version (__main__.TestPCIC) ... ok
+test_set_logic_state_of_an_id (__main__.TestPCIC) ... ok
+test_turn_process_interface_output_on_or_off (__main__.TestPCIC) ... ok
+test_upload_process_interface_output_configuration (__main__.TestPCIC) ... ok
+
+----------------------------------------------------------------------
+Ran 23 tests in 70.453s
+
+OK
