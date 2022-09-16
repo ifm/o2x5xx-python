@@ -346,7 +346,7 @@ class O2x5xxDevice(PCICV3Client):
         Overwrites the string data of a specific (ID) string container used in the logic layer.
 
         :param container_id: (int) number from 00 to 09
-        :param data: (string) string of a maximum size of 256 Bytes
+        :param data: (string) string of a maximum size of 256 bytes
         :return: - * Command was successful <br />
                  - ! Invalid argument or invalid state (other than run mode)
                    | Not existing element with input-container-ID in logic layer <br />

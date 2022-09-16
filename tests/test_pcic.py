@@ -137,11 +137,28 @@ class TestPCIC(TestCase):
 
     def test_overwrite_data_of_a_string(self):
         for i in range(MAX_NUMBER_CONTAINERS + 1):
+            # Test for data with leading number
+            container_string = "1234567890 Hello container number {id}!".format(id=i)
+            result = self.sensor.overwrite_data_of_a_string(container_id=i, data=container_string)
+            self.assertEqual(result, "*")
+
+            # Test for data with leading letter
             container_string = "Hello container number {id}!".format(id=i)
             result = self.sensor.overwrite_data_of_a_string(container_id=i, data=container_string)
             self.assertEqual(result, "*")
 
     def test_read_string_from_defined_container(self):
+        # Test for data with leading number
+        for i in range(MAX_NUMBER_CONTAINERS + 1):
+            container_string = "1234567890 container number {id}".format(id=i)
+            result = self.sensor.overwrite_data_of_a_string(container_id=i, data=container_string)
+            self.assertEqual(result, "*")
+        for i in range(MAX_NUMBER_CONTAINERS + 1):
+            container_string = "1234567890 container number {id}".format(id=i)
+            result = self.sensor.read_string_from_defined_container(container_id=i)
+            self.assertEqual(result[9:], container_string)
+
+        # Test for data with leading letter
         for i in range(MAX_NUMBER_CONTAINERS + 1):
             container_string = "Hello container number {id}!".format(id=i)
             result = self.sensor.overwrite_data_of_a_string(container_id=i, data=container_string)
@@ -218,7 +235,7 @@ if __name__ == '__main__':
         LOGFILE = sys.argv[3]
     except IndexError:
         raise ValueError("Argument(s) are missing. Here is an example for running the unittests: "
-                         "python test_pcic.py 192.168.0.69 1.27.4991 True")
+                         "python test_pcic.py 192.168.0.69 1.27.9941 True")
 
     if LOGFILE:
         timestamp = time.strftime("%Y%m%d-%H%M%S")
