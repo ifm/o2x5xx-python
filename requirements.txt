@@ -2,3 +2,5 @@ Pillow>=8.1.2
 numpy>=1.20.1
 matplotlib>=3.3.4
 setuptools>=49.2.1
+o2x5xx~=0.1
+pyodbc~=4.0.34
