@@ -291,7 +291,7 @@ class O2x5xxDevice(PCICV3Client):
 
     def request_last_image_taken_deserialized(self, image_id=1, datatype='ndarray'):
         """
-        Request last image taken deserialized in image header and image data. Image data can requested as bytes
+        Request last image taken deserialized in image header and image data. Image data can be requested as bytes
         or decoded as ndarray datatype.
 
         :param image_id: (int) 2 digits for the image type <br />
