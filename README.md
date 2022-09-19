@@ -71,7 +71,13 @@ Usage of examples requires packages listed in the requirements.txt file. Install
 
     $ pip install -r requirements.txt
 
-You can also install the package offline with following command
+In an industrial production it is normally not possible to install packages from the Internet. 
+Therefore you can first download the packages on your personal machine with following command
+
+    $ pip wheel -r requirements.txt -w ./packages
+
+and after that you can move that project with downloaded packages and install the package offline 
+with following command
 
     $ pip install --no-index --find-links ./packages -r requirements.txt
 
