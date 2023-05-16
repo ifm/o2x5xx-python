@@ -6,51 +6,19 @@
 
   * [O2x5xx Sensors Library for Python 3.x](#O2x5xx-Sensors-Library-for-Python-3.x)
     * [Description](#Description)
-    * [Features](#Features)
+    * [Contact](#Contact)
     * [Prerequisites](#Prerequisites)
-    * [Installation](#Installation)
-    * [Examples](#Examples)
+    * [Project/Package Installation](#Project/Package Installation)
+    * [Quick Start](#Quick Start)
     * [Usage](#Usage)
-      * [PCIC client](#PCIC client)
-    * [Function Description](#Function Description)
+    * [Classes and Methods Description](#Function Description)
       * [class Client](##class Client)
-        * [recv(number_bytes)](###recv(number_bytes))
-        * [close()](###close())
       * [class PCICV3Client](##class PCICV3Client)
-        * [read_next_answer()](###read_next_answer())
-        * [read_answer(ticket)](###read_answer(ticket))
-        * [send_command(cmd)](###send_command(cmd))
-      * [class O2x5xxDevice](##class O2x5xxDevice)
-        * [activate_application(number)](###activate_application(number))
-        * [application_list()](###application_list())
-        * [upload_pcic_output_configuration(config)](###upload_pcic_output_configuration(config))
-        * [retrieve_current_process_interface_configuration()](###retrieve_current_process_interface_configuration())
-        * [request_current_error_state()](###request_current_error_state())
-        * [request_current_error_state_decoded()](###request_current_error_state_decoded())
-        * [gated_software_trigger_on_or_off(state)](###gated_software_trigger_on_or_off(state))
-        * [request_device_information()](###request_device_information())
-        * [return_a_list_of_available_commands()](###return_a_list_of_available_commands())
-        * [request_last_image_taken(image_id)](###request_last_image_taken(image_id))
-        * [request_last_image_taken_deserialized(self, image_id, datatype)](#HeadingText "title")
-        * [overwrite_data_of_a_string(container_id, data)](#HeadingText "title")
-        * [read_string_from_defined_container(container_id)](###read_string_from_defined_container(container_id))
-        * [return_the_current_session_id()](###return_the_current_session_id())
-        * [set_logic_state_of_a_id(io_id, state)](#HeadingText "title")
-        * [request_state_of_a_id(io_id)](###request_state_of_a_id(io_id))
-        * [turn_process_interface_output_on_or_off(state)](###turn_process_interface_output_on_or_off(state))
-        * [request_current_decoding_statistics()](###request_current_decoding_statistics())
-        * [execute_asynchronous_trigger()](###execute_asynchronous_trigger())
-        * [execute_synchronous_trigger()](###execute_synchronous_trigger())
-        * [set_current_protocol_version(version)](###set_current_protocol_version(version))
-        * [request_current_protocol_version()](###request_current_protocol_version())
-        * [turn_state_of_view_indicator_on_or_off(state, duration)](#HeadingText "title")
+      * [**class O2x5xxPCICDevice**](##class O2x5xxPCICDevice)
+      * [**class O2x5xxRPCDevice**](##class O2x5xxRPCDevice) *(NEW)*
       * [class ImageClient](##class ImageClient)
-        * [number_images()](###number_images())
-        * [read_image_ids()](###read_image_ids())
-        * [read_next_frames()](###read_next_frames())
-        * [make_figure()](###make_figure())
-      * [Unit Tests](#Unit-Tests)
-      * [Source Styleguide](#Source Styleguide)
+    * [Unit Tests](#Unit-Tests)
+    * [Source Styleguide](#Source Styleguide)
 
 # Description
 
@@ -60,19 +28,18 @@ A Python 3 library for ifm efector O2x5xx 2D sensors (O2D5xx / O2I5xx).
 
 In case of any issues or if you want to report a bug please [contact our](mailto:support.sy@ifm.com) support team.
 
-# Features
-
-- PCIC V3 client for result data transfer
-- O2X5xxDevice client for PCIC command usage
-
 # Prerequisites
+
+### Dependent Packages (Online)
 
 Usage of examples requires packages listed in the requirements.txt file. Install the packages with
 
     $ pip install -r requirements.txt
 
-In an industrial production it is normally not possible to install packages from the Internet. 
-Therefore you can first download the packages on your personal machine with following command
+### Dependent Packages (Offline)
+
+In an industrial production it is normally not possible to install packages from an online package manager. 
+Therefore you can first download the packages on your personal machine with i-net access with following command
 
     $ pip wheel -r requirements.txt -w ./packages
 
@@ -81,67 +48,72 @@ with following command
 
     $ pip install --no-index --find-links ./packages -r requirements.txt
 
-# Installation
+# Project/Package Installation
 
-You can install the package with
+You can install this project/package in your native python or virtualenv with following command:
 
     $ python setup.py install
 
-# Examples
+After installation, you can import the package and clients from other projects, described in chapter [Usage](#Usage).
 
-For a quick start, go to the `examples` folder and run
+
+# Quick Start
+
+For a quick start, go to the `examples` folder and run the output_recorder.py example with your device's IP address 
+to record the asynchronous PCIC output for 3600 seconds and save the output into myFile.txt:
 
     $ python output_recorder.py 192.168.0.69 myFile.txt 3600
 
-with your device's IP address to record the asynchronous PCIC output for 3600 seconds and save the output into myFile.txt
+If you want to record the asynchronous PCIC output endless and save the output into myFile.txt, use following example:
 
     $ python output_recorder.py 192.168.0.69 myFile.txt -1
 
-with your device's IP address to record the asynchronous PCIC output endless and save the output into myFile.txt
+For vizualizing the image(s) data coming from the camera (requires matplotlib) use following example. 
+Each image will be show in an own window:
 
     $ python image_viewer.py 192.168.0.69
 
-to view the image(s) data coming from the camera (requires matplotlib). Each image will be show in an own window.
-
 # Usage
 
-## PCIC client
+The library currently provides four clients. You can decide which class with associated functionality is best 
+suited for your intended application. The device clients V1 and V2 differ only in the architecture and not in 
+the scope of functions. For the first use we recommend you to use the **Device client V2**, 
+which includes the full range of functions.
 
-The library currently provides three basic clients:
+### PCIC client
 
-### A simple PCIC V3 client
-
-- Create it with `pcic = o3d3xx.PCICV3Client("192.168.0.69", 50010)`
+- Create it with `device_pcic = O2x5xxPCICDevice(address="192.168.0.69", port=50010)`
   providing the device's address and PCIC port.
-- Send PCIC commands with e.g. `answer = pcic.sendCommand("G?")`. All
-  asnychronous PCIC messages are discarded while waiting for the answer
-  to the command.
-- Read back the next PCIC for a particular ticket number. This can be used
-  to read asynchronously sent results (ticket number "0000"):  
-  `answer = pcic.readAnswer("0000")`
-- Read back any answer coming from the device:  
-  `ticket, answer = pcic.readNextAnswer()`
 
-### A simple O2x5xx client (inheriting PCIC V3 client)
+### RPC client
 
-- Create it with `device = o2x5xx.O2x5xxDevice("192.168.0.69", 50010)`
+- Create it with `device_rpc = O2x5xxRPCDevice(address="192.168.0.69")`
+  providing the device's address.
+ 
+### Device client V1 (PCIC interface inherited and RPC interface as a composite)
+
+- Create it with `device = o2x5xx.O2x5xxDevice(address="192.168.0.69", port=50010)`
   providing the device's address and PCIC port.
-- Send PCIC commands wrapped into functions with e.g. 
+- Send PCIC commands with e.g. 
   `answer = device.occupancy_of_application_list()`. 
-  All asynchronous PCIC messages are discarded while waiting for the answer
-  to the command.
-- Upload PCIC configurations with e.g. `device = o2x5xx.O2x5xxDevice("192.168.0.69", 50010)`
-  The PCIC configuration is valid for the instanced device (session).
-- Complete function documentation as docstring.
-  
-### A PCIC client for asynchronous image retrieval (inheriting O2x5xx client)
+- Send RPC commands with e.g. 
+  `params = device.rpc.get_all_parameters()`. 
 
-- Create it with `image_viewer = o2x5xx.ImageClient("192.168.0.69", 50010)`.
+### Device client V2 (both PCIC and RPC interface provided as a composite)
+
+- Create it with `device = o2x5xx.O2x5xxDeviceV2(address="192.168.0.69", port=50010)`
+  providing the device's address and PCIC port.
+- Send PCIC commands with e.g. 
+  `answer = device.pcic.occupancy_of_application_list()`. 
+- Send RPC commands with e.g. 
+  `params = device.rpc.get_all_parameters()`. 
+- 
+### An image client for asynchronous image retrieval
+
+- Create it with `image_viewer = o2x5xx.ImageClient(address="192.168.0.69", port=50010)`.
 - It configures a PCIC connection to receive all images from the application.
 - Read back the next result (a list with header information and dictionary 
   containing all the images) with `result = pcic.readNextFrame()`
-- Read back the next result (a list with header information and all images
-  with datatype numpy.ndarray) with `result = pcic.readNextFrame()` 
 
 # Function Description
 
@@ -162,7 +134,7 @@ For a more detailed explanation of the function take a look on the docstring doc
 
         :return: None
 
-## class PCICV3Client (inheriting class Client)
+## class PCICV3Client
 
 ### read_next_answer()
 
@@ -185,7 +157,7 @@ For a more detailed explanation of the function take a look on the docstring doc
         :param cmd: (string) Command which you want to send to the device.
         :return: answer of the device as a string
 
-## class O2x5xxDevice (inheriting class PCICV3Client)
+## class O2x5xxPCICDevice
 
 ### activate_application(number)
 
@@ -509,7 +481,169 @@ For a more detailed explanation of the function take a look on the docstring doc
                    | Wrong duration
                  - ? Invalid command length
 
-## class ImageClient (inheriting class O2x5xxDevice)
+## class O2x5xxRPCDevice
+
+### get_parameter(parameter_name)
+
+        Returns the current value of the parameter.
+
+        :param parameter_name: (str) name of the input parameter
+        :return: (str) value of parameter
+
+### get_all_parameters()
+
+        Returns all parameters of the object in one data-structure.
+
+        :return: (dict) name contains parameter-name, value the stringified parameter-value
+
+### get_sw_version()
+
+        Returns version-information of all software componenents.
+
+        :return: (dict) struct of strings
+
+### get_hw_info()
+
+        Returns hardware-information of all components.
+
+        :return: (dict) struct of strings
+
+### get_application_list()
+
+        Delivers basic information of all Application stored on the device.
+
+        :return: dict (array list of structs)
+
+### reboot()
+
+        Reboot system, parameter defines which mode/system will be booted.
+
+        :param mode: (int) type of system that should be booted after shutdown
+                      "0": productive-mode (default)
+                      "1": recovery-mode (not implemented)
+        :return: None
+
+### is_configuration_done()
+
+        After an application (or imager configuration or model) parameter has been changed,
+        this method can be used to check when the new configuration has been applied within the imager process.
+
+        :return: (bool) True or False
+
+### wait_for_configuration_done()
+
+        After an application (or imager configuration or model) parameter has been changed,
+        this method can be used to check when the new configuration has been applied within the imager process.
+        This call blocks until configuration has been finished.
+
+        :return: None
+
+### switch_application()
+
+        Change active application when device is in run-mode.
+
+        :param application_index: (int) Index of new application (Range 1-32)
+        :return: None
+
+### get_application_statistic_data()
+
+        Returns a Chunk which contains the statistic data requested.The data is itself is updated every 15 seconds.
+        The main intend is to request Statistics of inactive applications.
+        For the latest statistics refer to PCIC instead.
+
+        :param application_id: (int) Index of application (Range 1-32)
+        :return: dict
+
+### reset_statistics()
+
+        Resets the statistic data of current active application.
+
+        :return: None
+
+### get_reference_image()
+
+        Returns the active application's reference image, if there is no fault.
+
+        :return: (np.ndarray) binary blob (base64) The format of the result-data blob is a JPEG decompressed image.
+
+### get_application_statistic_data()
+
+        Returns a Chunk which contains the statistic data requested.The data is itself is updated every 15 seconds.
+        The main intend is to request Statistics of inactive applications.
+        For the latest statistics refer to PCIC instead.
+
+        :param application_id: (int) Index of application (Range 1-32)
+        :return: dict
+
+### measure()
+
+        Measure geometric properties according to the currently valid calibration.
+
+        :param input_parameter: (dict) measureInput is a stringified json object
+        :return: (dict) measureResult
+
+### trigger()
+
+        Executes trigger.
+
+        :return: None
+
+### doPing()
+
+        Ping sensor device and check reachability in network.
+
+        :return: - "up" sensor is reachable through network
+                 - "down" sensor is not reachable through network
+
+### export_application()
+
+        Exports one application-config and stores it as an o2x5xxapp-file in the desired path.
+
+        :param application_file: (str) application file path as str
+        :param application_id: (int) application index
+        :return: None
+
+### import_application()
+
+        Imports an application-config and creates a new application with it.
+
+        :param application: (application-config as one-data-blob: binary/base64 OR application file path as str)
+        :return: (int) index of new application in list
+
+### delete_application()
+
+        Deletes the application form sensor. If the deleted application was the active one,
+        the sensor will have no active application anymore until the user picks one.
+
+        :param application_id: (int) application index
+        :return: None
+
+### move_applications()
+
+        Moves an application with know list index to other index.
+
+        :param id_from: (int) application id in application list
+        :param id_into: (int) desired application id in application list
+        :return: None
+
+### export_config()
+
+        Exports the whole configuration of the sensor-device and stores it at the desired path.
+
+        :param config_file: (str) path where the config file will be stored
+        :return: None
+
+### import_config()
+
+        Import whole configuration, with the option to skip specific parts.
+
+        :param config:              The config file (*.o2d5xxcfg) as string path or Binary/base64 data
+        :param global_settings:     0x0001: Include Globale-Configuration (Name, Description, Location, ...)
+        :param network_settings:    0x0002: Include Network-Configuration (IP, DHCP, ...)
+        :param applications:        0x0010: Include All Application-Configurations
+        :return:                    None
+
+## class ImageClient
 
 ### number_images()
 
@@ -545,11 +679,12 @@ For a more detailed explanation of the function take a look on the docstring doc
 
 # Unit Tests
 
-You can run the tests with following command:
+You can run the tests for PCIC and RPC with following command:
 
-    $ python .\test_pcic.py 192.168.0.69 1.27.9941 True
+    $ python .\test_pcic.py 192.168.0.69 True
+    $ python .\test_rpc.py 192.168.0.69 True
 
-You can see the results of the tests in the log files stored in the folder tests/logs.
+You can see the results of the tests in the log files stored in the folder `tests/logs`.
 
 # Source README.md Styleguide
 
