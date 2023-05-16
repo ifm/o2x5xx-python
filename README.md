@@ -4,21 +4,20 @@
 
 # Table of Contents
 
-  * [O2x5xx Sensors Library for Python 3.x](#O2x5xx-Sensors-Library-for-Python-3.x)
-    * [Description](#Description)
+  * [O2x5xx Sensors Library for Python 3.x](<O2x5xx-Sensors-Library-for-Python-3.x>)
+    * [Description](Description)
     * [Contact](#Contact)
     * [Prerequisites](#Prerequisites)
-    * [Project/Package Installation](#Project/Package Installation)
-    * [Quick Start](#Quick Start)
+    * [Project/Package Installation](<#Project/Package Installation>)
+    * [Quick Start](<#Quick Start>)
     * [Usage](#Usage)
-    * [Classes and Methods Description](#Function Description)
-      * [class Client](##class Client)
-      * [class PCICV3Client](##class PCICV3Client)
-      * [**class O2x5xxPCICDevice**](##class O2x5xxPCICDevice)
-      * [**class O2x5xxRPCDevice**](##class O2x5xxRPCDevice) *(NEW)*
-      * [class ImageClient](##class ImageClient)
+    * [Classes and Methods Description](<#Function Description>)
+      * [class Client](<##class Client>)
+      * [class PCICV3Client](<##class PCICV3Client>)
+      * [**class O2x5xxPCICDevice**](<##class O2x5xxPCICDevice>)
+      * [**class O2x5xxRPCDevice**](<##class O2x5xxRPCDevice>) *(NEW)*
+      * [class ImageClient](<##class ImageClient>)
     * [Unit Tests](#Unit-Tests)
-    * [Source Styleguide](#Source Styleguide)
 
 # Description
 
