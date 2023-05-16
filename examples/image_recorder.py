@@ -1,5 +1,5 @@
 from __future__ import (absolute_import, division, print_function, unicode_literals)
-from o2x5xx.pcic.image_client import ImageClient
+from o2x5xx.device.image_client import ImageClient
 from PIL import Image
 import time
 import sys
