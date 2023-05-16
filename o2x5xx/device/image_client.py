@@ -1,6 +1,6 @@
 from __future__ import (absolute_import, division, print_function)
 from builtins import *
-from o2x5xx.pcic.client import O2x5xxDevice
+from o2x5xx.pcic.client import O2x5xxPCICDevice
 from o2x5xx.static.formats import serialization_format
 from o2x5xx.static.configs import images_config
 import binascii
@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 
-class ImageClient(O2x5xxDevice):
+class ImageClient(O2x5xxPCICDevice):
 	def __init__(self, address, port):
 		super(ImageClient, self).__init__(address, port)
 
