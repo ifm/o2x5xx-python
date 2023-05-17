@@ -1,5 +1,8 @@
 from __future__ import (absolute_import, division, print_function, unicode_literals)
-from o2x5xx.pcic.client import O2x5xxDevice
+try:
+    from o2x5xx import O2x5xxDevice
+except ModuleNotFoundError:
+    from o2x5xx.device.client import O2x5xxDevice
 from datetime import datetime
 import time
 import sys

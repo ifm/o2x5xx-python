@@ -1,4 +1,7 @@
-from o2x5xx import O2x5xxDevice
+try:
+    from o2x5xx import O2x5xxDevice
+except ModuleNotFoundError:
+    from o2x5xx.device.client import O2x5xxDevice
 import pyodbc
 
 device = O2x5xxDevice(address='192.168.0.69', port=50010)

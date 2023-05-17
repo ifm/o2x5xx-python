@@ -1,5 +1,8 @@
 from __future__ import (absolute_import, division, print_function, unicode_literals)
-from o2x5xx.device.image_client import ImageClient
+try:
+    from o2x5xx import ImageClient
+except ModuleNotFoundError:
+    from o2x5xx.device.image_client import ImageClient
 from PIL import Image
 import time
 import sys
