@@ -1,7 +1,7 @@
 from __future__ import (absolute_import, division, print_function, unicode_literals)
 from threading import Timer
 import xmlrpc.client
-# from .edit import *
+from .edit import *
 
 
 class Session(object):
@@ -39,10 +39,10 @@ class Session(object):
 		else:
 			raise ValueError("Invalid operating mode")
 
-	# def startEdit(self):
-	# 	self.rpc.setOperatingMode(1)
-	# 	self.edit = Edit(self.url + 'edit/')
-	# 	return self.edit
+	def startEdit(self):
+		self.rpc.setOperatingMode(1)
+		self.edit = Edit(self.url + 'edit/')
+		return self.edit
 
 	def stopEdit(self):
 		self.rpc.setOperatingMode(0)
