@@ -7,15 +7,15 @@
 * [Description](#Description)
 * [Contact](#Contact)
 * [Prerequisites](#Prerequisites)
-* [Project/Package Installation](#Project/Package%20Installation)
-* [Quick Start](#Quick%20Start)
+* [Project/Package Installation](#Project/Package-Installation)
+* [Quick Start](#Quick-Start)
 * [Usage](#Usage)
-* [Classes and Methods Description](#Function%20Description)
-  * [class Client](#class%20Client)
-  * [class PCICV3Client](#class%20PCICV3Client)
-  * [**class O2x5xxPCICDevice**](#class%20O2x5xxPCICDevice)
-  * [**class O2x5xxRPCDevice**](#class%20O2x5xxRPCDevice) *(NEW)*
-  * [class ImageClient](#class%20ImageClient)
+* [Classes and Methods Description](#Classes-and-Methods-Description)
+  * [class Client](#class-Client)
+  * [class PCICV3Client](#class-PCICV3Client)
+  * [**class O2x5xxPCICDevice**](#class-O2x5xxPCICDevice)
+  * [**class O2x5xxRPCDevice**](#class-O2x5xxRPCDevice) *(NEW)*
+  * [class ImageClient](#class-ImageClient)
 * [Unit Tests](#Unit-Tests)
 
 # Description
@@ -113,7 +113,7 @@ which includes the full range of functions.
 - Read back the next result (a list with header information and dictionary 
   containing all the images) with `result = pcic.readNextFrame()`
 
-# Function Description
+# Classes and Methods Description
 
 For a more detailed explanation of the function take a look on the docstring documentation for each function.
 
