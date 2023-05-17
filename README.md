@@ -4,20 +4,19 @@
 
 # Table of Contents
 
-  * [O2x5xx Sensors Library for Python 3.x](<O2x5xx-Sensors-Library-for-Python-3.x>)
-    * [Description](Description)
-    * [Contact](#Contact)
-    * [Prerequisites](#Prerequisites)
-    * [Project/Package Installation](<#Project/Package Installation>)
-    * [Quick Start](<#Quick Start>)
-    * [Usage](#Usage)
-    * [Classes and Methods Description](<#Function Description>)
-      * [class Client](<##class Client>)
-      * [class PCICV3Client](<##class PCICV3Client>)
-      * [**class O2x5xxPCICDevice**](<##class O2x5xxPCICDevice>)
-      * [**class O2x5xxRPCDevice**](<##class O2x5xxRPCDevice>) *(NEW)*
-      * [class ImageClient](<##class ImageClient>)
-    * [Unit Tests](#Unit-Tests)
+* [Description](#Description)
+* [Contact](#Contact)
+* [Prerequisites](#Prerequisites)
+* [Project/Package Installation](#Project/Package%20Installation)
+* [Quick Start](#Quick%20Start)
+* [Usage](#Usage)
+* [Classes and Methods Description](#Function%20Description)
+  * [class Client](#class%20Client)
+  * [class PCICV3Client](#class%20PCICV3Client)
+  * [**class O2x5xxPCICDevice**](#class%20O2x5xxPCICDevice)
+  * [**class O2x5xxRPCDevice**](#class%20O2x5xxRPCDevice) *(NEW)*
+  * [class ImageClient](#class%20ImageClient)
+* [Unit Tests](#Unit-Tests)
 
 # Description
 
