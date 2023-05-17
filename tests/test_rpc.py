@@ -15,15 +15,14 @@ class TestRPC(TestCase):
     _active_application_backup = None
 
     @classmethod
-    def setUpClass(cls):
-        cls._sensor = O2x5xxRPCDevice(SENSOR_ADDRESS)
-        cls._config_backup = cls._sensor._export_config_bytes()
-        cls._active_application_backup = cls._sensor.get_parameter("ActiveApplication")
+    def get_import_setup_for_sensor_pin_layout(cls):
         pin_layout = int(cls._sensor.get_parameter("PinLayout"))
         if pin_layout == 3:
-            config_file = "../tests/deviceConfig/Unittest8PolDeviceConfig.o2d5xxcfg"
-        elif pin_layout == 0:
-            config_file = "../tests/deviceConfig/Unittest5PolDeviceConfig.o2d5xxcfg"
+            result = {'config_file': "./deviceConfig/Unittest8PolDeviceConfig.o2d5xxcfg",
+                      'app_import_file': "./deviceConfig/UnittestApplicationImport.o2d5xxapp"}
+        elif pin_layout == 0 or pin_layout == 2:
+            result = {'config_file': "./deviceConfig/Unittest5PolDeviceConfig.o2d5xxcfg",
+                      'app_import_file': "./deviceConfig/UnittestApplicationImport.o2d5xxapp"}
         else:
             raise NotImplementedError(
                 "Testcase for PIN layout {} not implemented yet!\nSee PIN layout overview here:\n"
@@ -32,6 +31,14 @@ class TestRPC(TestCase):
                 "2: M12 - 5 pins L Coded connector\n"
                 "3: M12 - 8 pins A Coded connector (different OUT-numbering then O3D3xx and with IN/OUT switching)\n"
                 "4: reserved for CAN-5pin connector (like O3DPxx, O3M or O3R)")
+        return result
+
+    @classmethod
+    def setUpClass(cls):
+        cls._sensor = O2x5xxRPCDevice(SENSOR_ADDRESS)
+        cls._config_backup = cls._sensor._export_config_bytes()
+        cls._active_application_backup = cls._sensor.get_parameter("ActiveApplication")
+        config_file = cls.get_import_setup_for_sensor_pin_layout()['config_file']
         cls._sensor.import_config(config_file, global_settings=True, network_settings=False, applications=True)
         cls._sensor.switch_application(1)
 
@@ -157,10 +164,13 @@ class TestRPC(TestCase):
 
         result = self.sensor.measure(input_parameter=input_measure_line)
         self.assertIsInstance(result, dict)
+        self.assertTrue(result)
         result = self.sensor.measure(input_parameter=input_measure_rect)
         self.assertIsInstance(result, dict)
+        self.assertTrue(result)
         result = self.sensor.measure(input_parameter=input_measure_circle)
         self.assertIsInstance(result, dict)
+        self.assertTrue(result)
 
     def test_trigger(self):
         application_active = self.sensor.get_parameter(parameter_name="ActiveApplication")
@@ -186,14 +196,14 @@ class TestRPC(TestCase):
         self.assertFalse(os.path.exists(tmp))
 
     def test_import_application(self):
-        tmp = "./deviceConfig/UnittestApplicationImport.o2d5xxapp"
+        tmp = self.get_import_setup_for_sensor_pin_layout()['app_import_file']
         app_index = self.sensor.import_application(application=tmp)
         app_idx = [x["Index"] for x in self.sensor.get_application_list()]
         self.assertTrue(app_index in app_idx)
         self.sensor.delete_application(application_id=app_index)
 
     def test_delete_application(self):
-        tmp = "./deviceConfig/UnittestApplicationImport.o2d5xxapp"
+        tmp = self.get_import_setup_for_sensor_pin_layout()['app_import_file']
         app_idx_list = []
         for i in range(2):
             app_index = self.sensor.import_application(application=tmp)
@@ -205,7 +215,7 @@ class TestRPC(TestCase):
             self.assertFalse(x in app_idx)
 
     def test_move_applications(self):
-        tmp = "./deviceConfig/UnittestApplicationImport.o2d5xxapp"
+        tmp = self.get_import_setup_for_sensor_pin_layout()['app_import_file']
         app_index = self.sensor.import_application(application=tmp)
         # Move app from app_index to position 30
         self.sensor.move_applications(id_from=app_index, id_into=30)
@@ -231,14 +241,8 @@ class TestRPC(TestCase):
         self.assertFalse(os.path.exists(tmp))
 
     def test_import_config(self):
-        pin_layout = int(self.sensor.get_parameter("PinLayout"))
-        if pin_layout == 3:
-            config_file = "../tests/deviceConfig/Unittest8PolDeviceConfig.o2d5xxcfg"
-        elif pin_layout == 0:
-            config_file = "../tests/deviceConfig/Unittest5PolDeviceConfig.o2d5xxcfg"
-        else:
-            raise NotImplementedError("Testcase for PIN layout {} not implemented yet!")
-        self._sensor.import_config(config_file, global_settings=True, network_settings=False, applications=True)
+        tmp = self.get_import_setup_for_sensor_pin_layout()['config_file']
+        self._sensor.import_config(tmp, global_settings=True, network_settings=False, applications=True)
         self._sensor.switch_application(1)
         app_idx = [x["Index"] for x in self.sensor.get_application_list()]
         self.assertTrue(len(app_idx) == 6)

@@ -19,15 +19,14 @@ class TestPCIC(TestCase):
     _pin_layout = None
 
     @classmethod
-    def setUpClass(cls):
-        cls._sensor = O2x5xxRPCDevice(SENSOR_ADDRESS)
-        cls._config_backup = cls._sensor._export_config_bytes()
-        cls._active_application_backup = cls._sensor.get_parameter("ActiveApplication")
-        cls._pin_layout = int(cls._sensor.get_parameter("PinLayout"))
-        if cls._pin_layout == 3:
-            config_file = "../tests/deviceConfig/Unittest8PolDeviceConfig.o2d5xxcfg"
-        elif cls._pin_layout == 0:
-            config_file = "../tests/deviceConfig/Unittest5PolDeviceConfig.o2d5xxcfg"
+    def get_import_setup_for_sensor_pin_layout(cls):
+        _pin_layout = int(cls._sensor.get_parameter("PinLayout"))
+        if _pin_layout == 3:
+            result = {'config_file': "./deviceConfig/Unittest8PolDeviceConfig.o2d5xxcfg",
+                      'app_import_file': "./deviceConfig/UnittestApplicationImport.o2d5xxapp"}
+        elif _pin_layout == 0 or _pin_layout == 2:
+            result = {'config_file': "./deviceConfig/Unittest5PolDeviceConfig.o2d5xxcfg",
+                      'app_import_file': "./deviceConfig/UnittestApplicationImport.o2d5xxapp"}
         else:
             raise NotImplementedError(
                 "Testcase for PIN layout {} not implemented yet!\nSee PIN layout overview here:\n"
@@ -36,6 +35,14 @@ class TestPCIC(TestCase):
                 "2: M12 - 5 pins L Coded connector\n"
                 "3: M12 - 8 pins A Coded connector (different OUT-numbering then O3D3xx and with IN/OUT switching)\n"
                 "4: reserved for CAN-5pin connector (like O3DPxx, O3M or O3R)")
+        return result
+
+    @classmethod
+    def setUpClass(cls):
+        cls._sensor = O2x5xxRPCDevice(SENSOR_ADDRESS)
+        cls._config_backup = cls._sensor._export_config_bytes()
+        cls._active_application_backup = cls._sensor.get_parameter("ActiveApplication")
+        config_file = cls.get_import_setup_for_sensor_pin_layout()['config_file']
         cls._sensor.import_config(config_file, global_settings=True, network_settings=False, applications=True)
         cls._sensor.switch_application(1)
 
@@ -180,7 +187,8 @@ class TestPCIC(TestCase):
         self.assertIsInstance(int(result), int)
 
     def test_set_logic_state_of_an_id(self):
-        if self._pin_layout == 2:
+        pin_layout = int(self._sensor.get_parameter("PinLayout"))
+        if pin_layout == 2 or pin_layout == 0:
             sensor_digital_ios = [1, 2]
         else:
             sensor_digital_ios = [1, 2, 3, 4]
