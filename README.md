@@ -7,7 +7,7 @@
 * [Description](#Description)
 * [Contact](#Contact)
 * [Prerequisites](#Prerequisites)
-* [Project/Package Installation](#Project/Package-Installation)
+* [Package Installation](#Package-Installation)
 * [Quick Start](#Quick-Start)
 * [Usage](#Usage)
 * [Classes and Methods Description](#Classes-and-Methods-Description)
@@ -46,7 +46,7 @@ with following command
 
     $ pip install --no-index --find-links ./packages -r requirements.txt
 
-# Project/Package Installation
+# Package Installation
 
 You can install this project/package in your native python or virtualenv with following command:
 
