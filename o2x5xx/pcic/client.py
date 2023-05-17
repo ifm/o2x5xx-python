@@ -393,7 +393,7 @@ class O2x5xxPCICDevice(PCICV3Client):
         Sets the logic state of a specific ID.
 
         :param io_id: (int) 2 digits for digital output <br />
-                      1: IO1 <br />
+                      "01": IO1 <br />
                       "02": IO2
         :param state: (int) 1 digit for the state <br />
                       "0": logic state low <br />
