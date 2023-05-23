@@ -1,5 +1,5 @@
 from unittest import TestCase
-from o2x5xx import O2x5xxDevice
+from o2x5xx import O2x5xxDevice, O2x5xxRPCDevice
 from o2x5xx.static.configs import images_config
 import unittest
 import time
@@ -8,45 +8,59 @@ import ast
 import os
 
 SENSOR_ADDRESS = '192.168.0.69'
+PCIC_TCP_PORT = 50010
 MAX_NUMBER_CONTAINERS = 9
-DIGITAL_OUT_IDs = [1, 2, 3, 4]
-
-O2X5xxDigitalIOs = {
-    "O2D500": [1, 2, 3, 4],
-    "O2D502": [1, 2, 3, 4],
-    "O2D504": [1, 2, 3, 4],
-    "O2D520": [1, 2, 3, 4],
-    "O2D522": [1, 2, 3, 4],
-    "O2D524": [1, 2, 3, 4],
-    "O2D510": [1, 2],
-    "O2D512": [1, 2],
-    "O2D514": [1, 2],
-    "O2D530": [1, 2],
-    "O2D532": [1, 2],
-    "O2D534": [1, 2],
-    "O2D550": [1, 2],
-    "O2D552": [1, 2],
-    "O2D554": [1, 2],
-    "M03896": [1, 2]
-}
 
 
 class TestPCIC(TestCase):
+    _sensor = None
+    _config_backup = None
+    _active_application_backup = None
+    _pin_layout = None
+
+    @classmethod
+    def get_import_setup_for_sensor_pin_layout(cls):
+        _pin_layout = int(cls._sensor.get_parameter("PinLayout"))
+        if _pin_layout == 3:
+            result = {'config_file': "./deviceConfig/Unittest8PolDeviceConfig.o2d5xxcfg",
+                      'app_import_file': "./deviceConfig/UnittestApplicationImport.o2d5xxapp"}
+        elif _pin_layout == 0 or _pin_layout == 2:
+            result = {'config_file': "./deviceConfig/Unittest5PolDeviceConfig.o2d5xxcfg",
+                      'app_import_file': "./deviceConfig/UnittestApplicationImport.o2d5xxapp"}
+        else:
+            raise NotImplementedError(
+                "Testcase for PIN layout {} not implemented yet!\nSee PIN layout overview here:\n"
+                "0: M12 - 5 pins A Coded connector (compatible to O3D3xx camera, Trigger and 2Outs)\n"
+                "1: reserved for O3D3xx 8pin (trigger, 3 OUTs, 2 INs ... analog OUT1)\n"
+                "2: M12 - 5 pins L Coded connector\n"
+                "3: M12 - 8 pins A Coded connector (different OUT-numbering then O3D3xx and with IN/OUT switching)\n"
+                "4: reserved for CAN-5pin connector (like O3DPxx, O3M or O3R)")
+        return result
+
+    @classmethod
+    def setUpClass(cls):
+        cls._sensor = O2x5xxRPCDevice(SENSOR_ADDRESS)
+        cls._config_backup = cls._sensor._export_config_bytes()
+        cls._active_application_backup = cls._sensor.get_parameter("ActiveApplication")
+        config_file = cls.get_import_setup_for_sensor_pin_layout()['config_file']
+        cls._sensor.import_config(config_file, global_settings=True, network_settings=False, applications=True)
+        cls._sensor.switch_application(1)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._sensor.import_config(cls._config_backup, global_settings=True, network_settings=False, applications=True)
+        if cls._active_application_backup != "0":
+            cls._sensor.switch_application(cls._active_application_backup)
 
     def setUp(self):
         time.sleep(1)
-        self.sensor = O2x5xxDevice(SENSOR_ADDRESS, 50010)
+        self.sensor = O2x5xxDevice(SENSOR_ADDRESS, PCIC_TCP_PORT)
         result = self.sensor.activate_application(1)
         self.assertEqual(result, "*")
 
     def tearDown(self):
         self.sensor.close()
         time.sleep(1)
-
-    def get_sensor_type_digital_ios(self):
-        device_information = self.sensor.request_device_information()
-        sensor_type = device_information.split('\t')[1]
-        return O2X5xxDigitalIOs[sensor_type]
 
     def test_occupancy_of_application_list(self):
         result = self.sensor.occupancy_of_application_list()
@@ -170,11 +184,14 @@ class TestPCIC(TestCase):
 
     def test_return_the_current_session_id(self):
         result = self.sensor.return_the_current_session_id()
-        # Depends on the state in iVA. 1 and 2 are valid session IDs
-        self.assertTrue(int(result) == 1 or int(result) == 2)
+        self.assertIsInstance(int(result), int)
 
     def test_set_logic_state_of_an_id(self):
-        sensor_digital_ios = self.get_sensor_type_digital_ios()
+        pin_layout = int(self._sensor.get_parameter("PinLayout"))
+        if pin_layout == 2 or pin_layout == 0:
+            sensor_digital_ios = [1, 2]
+        else:
+            sensor_digital_ios = [1, 2, 3, 4]
         for io_id in sensor_digital_ios:
             result = self.sensor.set_logic_state_of_an_id(io_id=io_id, state=1)
             self.assertEqual(result, "*")
@@ -218,28 +235,46 @@ class TestPCIC(TestCase):
         # self.assertEqual(result, "*")
 
     def test_request_current_protocol_version(self):
+        initial_pcic_version = int(self.sensor.rpc.get_parameter(parameter_name="PcicProtocolVersion"))
+        # # V1
+        # result = self.sensor.set_current_protocol_version(1)
+        # self.assertEqual(result, "*")
+        # result = self.sensor.request_current_protocol_version()
+        # self.assertEqual(result, "01 01 02 03")
+        # # V2
+        # result = self.sensor.set_current_protocol_version(2)
+        # self.assertEqual(result, "*")
+        # result = self.sensor.request_current_protocol_version()
+        # self.assertEqual(result, "02 01 02 03")
         # V3
         result = self.sensor.set_current_protocol_version(3)
         self.assertEqual(result, "*")
         result = self.sensor.request_current_protocol_version()
-        self.assertEqual(result, "03 01 03")
-        # V1 TODO
-        # result = self.sensor.set_current_protocol_version(1)
-        # self.assertEqual(result, "*")
+        self.assertEqual(result, "03 01 02 03")
+        # Set back to initial version
+        result = self.sensor.set_current_protocol_version(initial_pcic_version)
+        self.assertEqual(result, "*")
+        result = self.sensor.request_current_protocol_version()
+        self.assertEqual(result, "0{} 01 02 03".format(str(initial_pcic_version)))
 
 
 if __name__ == '__main__':
     try:
         SENSOR_ADDRESS = sys.argv[1]
-        FIRMWARE_VERSION = sys.argv[2]
-        LOGFILE = sys.argv[3]
+        LOGFILE = sys.argv[2]
     except IndexError:
-        raise ValueError("Argument(s) are missing. Here is an example for running the unittests: "
-                         "python test_pcic.py 192.168.0.69 1.27.9941 True")
+        raise ValueError("Argument(s) are missing. Here is an example for running the unittests with logfile:\n"
+                         "python test_pcic.py 192.168.0.69 True\n"
+                         "Here is an example for running the unittests without an logfile:\n"
+                         "python test_pcic.py 192.168.0.69 False")
+
+    device_rpc = O2x5xxRPCDevice(address=SENSOR_ADDRESS)
+    PCIC_TCP_PORT = int(device_rpc.get_parameter(parameter_name="PcicTcpPort"))
 
     if LOGFILE:
+        FIRMWARE_VERSION = device_rpc.get_sw_version()["IFM_Software"]
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        logfile = os.path.join('./logs', '{timestamp}_{firmware}_unittests_o2x5xx.log'
+        logfile = os.path.join('./logs', '{timestamp}_{firmware}_pcic_unittests_o2x5xx.log'
                                .format(timestamp=timestamp, firmware=FIRMWARE_VERSION))
 
         logfile = open(logfile, 'w')

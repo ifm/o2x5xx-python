@@ -91,12 +91,12 @@ class PCICV3Client(Client):
         return answer
 
 
-class O2x5xxDevice(PCICV3Client):
+class O2x5xxPCICDevice(PCICV3Client):
     def __init__(self, address, port):
         self.address = address
         self.port = port
 
-        super(O2x5xxDevice, self).__init__(address, port)
+        super(O2x5xxPCICDevice, self).__init__(address, port)
 
     def activate_application(self, number):
         """
@@ -107,7 +107,7 @@ class O2x5xxDevice(PCICV3Client):
                  - ! Application not available
                    | &lt;application number> contains wrong value
                    | External application switching activated
-                   | Device is in an invalid state for the command, e.g. configuration mode
+                   | Device is in an invalid state for the command, e.g. configuration mode <br />
                  - ? Invalid command length
         """
         command = 'a' + str(number).zfill(2)
@@ -142,7 +142,7 @@ class O2x5xxDevice(PCICV3Client):
 
         :param config: (dict) configuration data
         :return: - * Command was successful <br />
-                 - ! Error in configuration <br />
+                 - ! Error in configuration
                    | Wrong data length <br />
                  - ? Invalid command length
         """
@@ -393,7 +393,7 @@ class O2x5xxDevice(PCICV3Client):
         Sets the logic state of a specific ID.
 
         :param io_id: (int) 2 digits for digital output <br />
-                      1: IO1 <br />
+                      "01": IO1 <br />
                       "02": IO2
         :param state: (int) 1 digit for the state <br />
                       "0": logic state low <br />
@@ -502,7 +502,7 @@ class O2x5xxDevice(PCICV3Client):
         Executes trigger. The result data is send synchronously.
         Only compatible with configured trigger source "Process Interface" on the sensor.
 
-        :return: - (str) decoded data output of process interface
+        :return: - (str) decoded data output of process interface  <br />
                  - ! Device is busy with an evaluation
                    | Device is in an invalid state for the command, e.g. configuration mode
                    | Device is set to a different trigger source

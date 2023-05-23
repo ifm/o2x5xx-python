@@ -1,6 +1,8 @@
 from __future__ import (absolute_import, division, print_function, unicode_literals)
-# from builtins import *
-from o2x5xx import ImageClient
+try:
+    from o2x5xx import ImageClient
+except ModuleNotFoundError:
+    from o2x5xx.device.image_client import ImageClient
 import sys
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
