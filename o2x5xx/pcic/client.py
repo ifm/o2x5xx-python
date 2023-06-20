@@ -432,7 +432,8 @@ class O2x5xxPCICDevice(PCICV3Client):
                  "1": logic state high <br />
                  - ! Invalid state (e.g. configuration mode)
                    | Wrong ID
-                   | Element PCIC Output not connected to DIGITAL_OUT element in logic layer <br />
+                   | Element PCIC Output not connected to DIGITAL_OUT element in logic layer
+                   (only valid for FW lower 1.30.40100) <br />
                  - ? Invalid command length
         """
         if str(io_id).isnumeric():
@@ -559,5 +560,19 @@ class O2x5xxPCICDevice(PCICV3Client):
         if str(duration).isnumeric():
             duration = str(duration).zfill(3)
         result = self.send_command('d{state}{duration}'.format(state=state, duration=duration))
+        result = result.decode()
+        return result
+
+    def execute_currently_configured_button_functionality(self):
+        """
+        Execute the currently configured button functionality.
+
+        :return: - * Button functionality was executed without an error. <br />
+                 - ! no button function configured
+                   | button function already running
+                   | button function caused an error
+                   | device is in an invalid state for this command, e.g. configuration mode
+        """
+        result = self.send_command('b')
         result = result.decode()
         return result

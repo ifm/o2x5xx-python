@@ -60,3 +60,21 @@ serialization_format = {
     0x002C: ["TIME_STAMP_NSEC", "Timestamp nanoseconds", 4],
     0x0030: ["META_DATA", "UTF-8 encoded null-terminated JSON object. The content of the JSON object is depending "
                           "on the CHUNK_TYPE.", 4]}
+
+trigger_modes = {
+    1: "free run (continuous mode)",
+    2: "process interface",
+    3: "positive edge",
+    4: "negative edge",
+    5: "positive and negative edge",
+    6: "gated HW",
+    7: "gated process interface",
+    8: "time controlled gated HW"
+}
+
+illumination_types = {
+    0: "no illumination active",
+    1: "internal illumination shall be used",
+    2: "external illumination shall be used",
+    3: "internal and external illumination shall be used together"
+}
