@@ -8,8 +8,8 @@ except ImportError:
     pass
 
 setup(name='o2x5xx',
-      version='0.1',
-      description='A Python library for ifm O2D5xx devices',
+      version='0.2',
+      description='A Python library for ifm O2x5xx (O2D5xx / O2I5xx) devices',
       author='Michael Gann',
       author_email='support.sy@ifm.com',
       license='MIT',
