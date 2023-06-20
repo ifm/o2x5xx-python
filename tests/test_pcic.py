@@ -1,6 +1,6 @@
 from unittest import TestCase
-from source import O2x5xxPCICDevice, O2x5xxRPCDevice
-from source.static.configs import images_config
+from o2x5xx import O2x5xxPCICDevice, O2x5xxRPCDevice
+from o2x5xx.static.configs import images_config
 from tests.utils import *
 import unittest
 import time

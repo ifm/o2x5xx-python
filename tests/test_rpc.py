@@ -1,5 +1,5 @@
 from unittest import TestCase
-from source import O2x5xxRPCDevice
+from o2x5xx import O2x5xxRPCDevice
 from tests.utils import *
 import numpy as np
 import unittest
