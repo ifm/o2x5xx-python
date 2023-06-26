@@ -22,7 +22,6 @@ class O2x5xxRPCDevice(object):
             self.rpc = xmlrpc.client.ServerProxy(self.mainURL)
             self.address = address
             self.tcpIpPort = int(self.getParameter("PcicTcpPort"))
-            # self._pcicDevice = O2x5xxPCICDevice(address=address, port=self.tcpIpPort)
         except Exception as e:
             print(e)
 
