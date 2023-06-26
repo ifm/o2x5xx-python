@@ -1,4 +1,4 @@
-![image](logo.png "ifm_python_logo")
+![image](docs/readme/logo.png "ifm_python_logo")
 
 # O2x5xx Sensors Library for Python 3.x
 
@@ -24,7 +24,8 @@ A Python 3 library for ifm efector O2x5xx 2D sensors (O2D5xx / O2I5xx).
 
 # Contact
 
-In case of any issues or if you want to report a bug please [contact our](mailto:support.sy@ifm.com) support team.
+In case of any issues or if you want to report a bug please [contact our](mailto:support.sy@ifm.com) support team
+or create an issue in the Github repository.
 
 # Prerequisites
 
@@ -73,14 +74,18 @@ Each image will be show in an own window:
 
 # Usage
 
-The library currently provides four clients. You can decide which class with associated functionality is best 
-suited for your intended application. The device clients V1 and V2 differ only in the architecture and not in 
-the scope of functions. For the first use we recommend you to use the **Device client V2**, 
-which includes the full range of functions.
+The library currently provides clients for the PCIC and RPC interface. You can decide which class with associated 
+functionality is best suited for your intended application. The device clients V1 and V2 differ only in the 
+architecture and not in the scope of functions. We recommend using the **Device client V2**, which includes the 
+full range of functions.
+
+# Classes and Methods Description
 
 ### PCIC client
 
-- Create it with `device_pcic = O2x5xxPCICDevice(address="192.168.0.69", port=50010)`
+- Create it with following example:
+
+`device_pcic = O2x5xxPCICDevice(address="192.168.0.69", port=50010)`
   providing the device's address and PCIC port.
 
 ### RPC client
@@ -113,11 +118,11 @@ which includes the full range of functions.
 - Read back the next result (a list with header information and dictionary 
   containing all the images) with `result = pcic.readNextFrame()`
 
-# Classes and Methods Description
-
-For a more detailed explanation take a look on the docstring documentation for each function.
+# Interface Description
 
 ## PCIC
+
+### PCIC objects and methods
 
 ```bash
 ├── O2x5xxPCICDevice (object)
@@ -148,10 +153,27 @@ For a more detailed explanation take a look on the docstring documentation for e
 
 ```
 
-## RPC
+## XML-RPC
+
+To communicate and to configure the device via XML-RPC the XML-RPC commands have to use
+different XML-RPC objects. Different commands need different XML-RPC objects (see XML-RPC
+command references).
+
+The interface of O3D3xx is structured in an object-oriented way. Some of the objects are available all
+the time, others are only available after bringing the device into a special mode by calling a method
+on an already available object. This mechanism is used to create system requirements (e.g. password
+protection).
+
+It could be necessary to send heartbeats so that there will be no session timeout.
+The following diagram should give an overview how objects are related to each other and which methods
+must be called to make others available:
+
+![image](docs/readme/RPC_objects_tree.drawio.png "RPC objects tree")
+
+### XML-RPC objects and methods
 
 ```bash
-├── O2x5xxRPCDevice (object)
+├── Main API (object) (O2x5xxRPCDevice)
 ├── getParameter(value)
 ├── getAllParameters()
 ├── getSWVersion()
@@ -171,6 +193,12 @@ For a more detailed explanation take a look on the docstring documentation for e
 ├── doPing()
 └── requestSession(password, sessionID)
     └── Session (object)
+        ├── @property
+        │   ├── OperatingMode
+        │   └── edit
+        ├── startEdit()  
+        ├── stopEdit()  
+        ├── heartbeat(heartbeatInterval)  
         ├── doAutoHeartbeat()  
         ├── cancelSession()  
         ├── exportConfig()  
@@ -180,15 +208,16 @@ For a more detailed explanation take a look on the docstring documentation for e
         ├── getImportProgress()  
         ├── getExportProgress()  
         ├── cleanupExport()  
-        ├── getApplicationDetails(applicationIndex)  
-        ├── startEdit()  
-        ├── stopEdit()  
+        ├── getApplicationDetails(applicationIndex)
         ├── resetStatistics()  
-        ├── writeApplicationConfigFile(applicationFile, data)  
-        ├── writeConfigFile(configFile, data)  
+        ├── writeApplicationConfigFile(applicationName, data)  
+        ├── writeConfigFile(configName, data)  
+        ├── readApplicationConfigFile(applicationFile)
         ├── readConfigFile(configFile)
         └── setOperatingMode(mode)  
             └── Edit (object)
+                ├── @property
+                │   └── application
                 ├── stopEditingApplication() 
                 ├── createApplication() 
                 ├── copyApplication(applicationIndex) 
@@ -196,7 +225,7 @@ For a more detailed explanation take a look on the docstring documentation for e
                 ├── changeNameAndDescription(applicationIndex, name, description) 
                 ├── moveApplications(applicationIndexFrom, applicationIndexTo)
                 └── editApplication(applicationIndex) 
-                    └── ApplicationConfig (object)
+                    └── Application (object)
                         ├── @property
                         │   ├── Type
                         │   ├── Name
@@ -205,9 +234,11 @@ For a more detailed explanation take a look on the docstring documentation for e
                         │   ├── FrameRate
                         │   ├── HWROI
                         │   ├── Rotate180Degree
-                        │   └── FocusDistance
+                        │   ├── FocusDistance
+                        │   └── ImageEvaluationOrder
                         ├── getAllParameters()
                         ├── getParameter(value)
+                        ├── getAllParameterLimits()
                         ├── save()
                         ├── validate()
                         ├── getImagerConfigList()
@@ -215,9 +246,18 @@ For a more detailed explanation take a look on the docstring documentation for e
                         ├── createImagerConfig()
                         ├── copyImagerConfig()
                         ├── deleteImagerConfig()
+                        ├── isConfigurationDone()
+                        ├── waitForConfigurationDone()
                         └── editImage(imageIndex)
-                            └── ImagerConfig (object)
+                            └── Imager (object)
                                 ├── @property
+                                │   ├── ImageQualityCheckConfig (object)
+                                │   │   ├── @property
+                                │   │   ├── enabled(value)
+                                │   │   ├── sharpness_thresholdMinMax(inputDict)
+                                │   │   ├── meanBrightness_thresholdMinMax(inputDict)
+                                │   │   ├── underexposedArea_thresholdMinMax(inputDict)
+                                │   │   └── overexposedArea_thresholdMinMax(inputDict)
                                 │   ├── Type
                                 │   ├── Name
                                 │   ├── Illumination
@@ -227,46 +267,33 @@ For a more detailed explanation take a look on the docstring documentation for e
                                 │   ├── AnalogGainFactor
                                 │   ├── FilterType
                                 │   ├── FilterStrength
-                                │   ├── FilterInvert
-                                │   └── QualityCheckConfig 
+                                │   └── FilterInvert
                                 ├── getAllParameters()  
                                 ├── getParameter(value)  
                                 ├── getAllParameterLimits()  
-                                ├── setIlluInternalSegments(upperLeft, upperRight, lowerLeft, lowerRight)  
-                                ├── enableImageQualityCheck()
-                                ├── disableImageQualityCheck()
-                                ├── resetQualityCheckMinMax()
-                                ├── startCalculateExposureTime()  
+                                ├── startCalculateExposureTime()
                                 ├── getProgressCalculateExposureTime()
                                 ├── startCalculateAutofocus()
                                 ├── stopCalculateAutofocus()
                                 ├── getProgressCalculateAutofocus()
                                 ├── getAutofocusDistances()
                                 └── getAutoExposureResult()
+
 ```
 
 # Unit Tests
 
-You can simply run all tests with following command:
+For testing the source code you have to enter the IP address and TCP/IP port number in the *tests\config.py* file. 
+Afterwards you can simply run all tests with following commands:
 
-    $ python -m unittest
+    $ python .\test_pcic.py
 
-You can run the tests for PCIC with following commands:
-
-    $ python .\test_pcic.py 192.168.0.69
-
-You can run the tests for the RPC modules with following commands:
-
-    $ python .\test_rpc.py 192.168.0.69
-    $ python .\test_session.py 192.168.0.69
-    $ python .\test_edit.py 192.168.0.69
-    $ python .\test_application.py 192.168.0.69
-    $ python .\test_imager.py 192.168.0.69
-    $ python .\test_imageQualityCheck.py 192.168.0.69
-
-You can see the results of the tests in the log files stored in the folder `tests/logs`.
-
-# Source README.md Styleguide
-
-https://github.com/amontalenti/elements-of-python-style/blob/master/README.md
-
+You can run the tests for the PCIC and RPC modules separately with following commands:
+    
+    $ python .\test_pcic.py
+    $ python .\test_rpc.py
+    $ python .\test_session.py
+    $ python .\test_edit.py
+    $ python .\test_application.py
+    $ python .\test_imager.py
+    $ python .\test_imageQualityCheck.py
