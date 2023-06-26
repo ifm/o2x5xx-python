@@ -1,16 +1,10 @@
 from unittest import TestCase
-from o2x5xx import O2x5xxPCICDevice, O2x5xxRPCDevice
-from o2x5xx.static.configs import images_config
+from source import O2x5xxPCICDevice, O2x5xxRPCDevice
+from source.static.configs import images_config
 from tests.utils import *
-import unittest
+from .config import *
 import time
-import sys
 import ast
-import os
-
-SENSOR_ADDRESS = '192.168.0.69'
-PCIC_TCP_PORT = 50010
-MAX_NUMBER_CONTAINERS = 9
 
 
 class TestPCIC(TestCase):
@@ -23,8 +17,8 @@ class TestPCIC(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.pcic = O2x5xxPCICDevice(SENSOR_ADDRESS, PCIC_TCP_PORT)
-        cls.rpc = O2x5xxRPCDevice(SENSOR_ADDRESS)
+        cls.pcic = O2x5xxPCICDevice(deviceAddress, pcicTcpPort)
+        cls.rpc = O2x5xxRPCDevice(deviceAddress)
         cls.session = cls.rpc.requestSession()
         cls.config_backup = cls.session.exportConfig()
         cls.active_application_backup = cls.rpc.getParameter("ActiveApplication")
@@ -133,7 +127,7 @@ class TestPCIC(TestCase):
             self.assertEqual(type(result[i][1]).__name__, 'ndarray')
 
     def test_overwrite_data_of_a_string(self):
-        for i in range(MAX_NUMBER_CONTAINERS + 1):
+        for i in range(maxNumberContainers + 1):
             # Test for data with leading number
             container_string = "1234567890 Hello container number {id}!".format(id=i)
             result = self.pcic.overwrite_data_of_a_string(container_id=i, data=container_string)
@@ -146,21 +140,21 @@ class TestPCIC(TestCase):
 
     def test_read_string_from_defined_container(self):
         # Test for data with leading number
-        for i in range(MAX_NUMBER_CONTAINERS + 1):
+        for i in range(maxNumberContainers + 1):
             container_string = "1234567890 container number {id}".format(id=i)
             result = self.pcic.overwrite_data_of_a_string(container_id=i, data=container_string)
             self.assertEqual(result, "*")
-        for i in range(MAX_NUMBER_CONTAINERS + 1):
+        for i in range(maxNumberContainers + 1):
             container_string = "1234567890 container number {id}".format(id=i)
             result = self.pcic.read_string_from_defined_container(container_id=i)
             self.assertEqual(result[9:], container_string)
 
         # Test for data with leading letter
-        for i in range(MAX_NUMBER_CONTAINERS + 1):
+        for i in range(maxNumberContainers + 1):
             container_string = "Hello container number {id}!".format(id=i)
             result = self.pcic.overwrite_data_of_a_string(container_id=i, data=container_string)
             self.assertEqual(result, "*")
-        for i in range(MAX_NUMBER_CONTAINERS + 1):
+        for i in range(maxNumberContainers + 1):
             container_string = "Hello container number {id}!".format(id=i)
             result = self.pcic.read_string_from_defined_container(container_id=i)
             self.assertEqual(result[9:], container_string)
@@ -229,35 +223,3 @@ class TestPCIC(TestCase):
             self.assertEqual(result, "*")
             result = self.pcic.request_current_protocol_version()
             self.assertEqual(result, "0{} 01 02 03".format(str(initialPCICVersion)))
-
-
-if __name__ == '__main__':
-    try:
-        SENSOR_ADDRESS = sys.argv[1]
-        LOGFILE = sys.argv[2]
-    except IndexError:
-        raise ValueError("Argument(s) are missing. Here is an example for running the unittests with logfile:\n"
-                         "python test_pcic.py 192.168.0.69 True\n"
-                         "Here is an example for running the unittests without an logfile:\n"
-                         "python test_pcic.py 192.168.0.69 False")
-
-    device_rpc = O2x5xxRPCDevice(address=SENSOR_ADDRESS)
-    PCIC_TCP_PORT = int(device_rpc.getParameter(value="PcicTcpPort"))
-
-    if LOGFILE:
-        FIRMWARE_VERSION = device_rpc.getSWVersion()["IFM_Software"]
-        timestamp = time.strftime("%Y%m%d-%H%M%S")
-        logfile = os.path.join('./logs', '{timestamp}_{firmware}_pcic_unittests_o2x5xx.log'
-                               .format(timestamp=timestamp, firmware=FIRMWARE_VERSION))
-
-        logfile = open(logfile, 'w')
-        sys.stdout = logfile
-
-        suite = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
-        unittest.TextTestRunner(sys.stdout, verbosity=2).run(suite)
-        logfile.close()
-
-    else:
-        suite = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
-        # unittest.TextTestRunner(verbosity=2).run(suite)
-        unittest.TextTestRunner().run(suite)

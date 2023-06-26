@@ -1,13 +1,9 @@
 from unittest import TestCase
-from o2x5xx import O2x5xxRPCDevice
+from source import O2x5xxRPCDevice
 from tests.utils import *
+from .config import *
 import numpy as np
-import unittest
 import time
-import sys
-import os
-
-SENSOR_ADDRESS = '192.168.0.69'
 
 
 class TestRPC_MainAPI(TestCase):
@@ -19,7 +15,7 @@ class TestRPC_MainAPI(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.rpc = O2x5xxRPCDevice(SENSOR_ADDRESS)
+        cls.rpc = O2x5xxRPCDevice(deviceAddress)
         cls.session = cls.rpc.requestSession()
         cls.config_backup = cls.session.exportConfig()
         cls.active_application_backup = cls.rpc.getParameter("ActiveApplication")
@@ -168,47 +164,17 @@ class TestRPC_MainAPI(TestCase):
         self.assertTrue(result)
 
     def test_trigger(self):
+        number_trigger = 100
         application_active = self.rpc.getParameter(value="ActiveApplication")
         initial_application_stats = self.rpc.getApplicationStatisticData(applicationIndex=int(application_active))
         initial_number_of_frames = initial_application_stats['number_of_frames']
-        self.rpc.trigger()
-        time.sleep(1)
+        for i in range(number_trigger):
+            answer = self.rpc.trigger()
+            self.assertTrue(answer)
         application_stats = self.rpc.getApplicationStatisticData(applicationIndex=int(application_active))
         number_of_frames = application_stats['number_of_frames']
-        self.assertEqual(number_of_frames, initial_number_of_frames + 1)
+        self.assertEqual(number_of_frames, initial_number_of_frames + number_trigger)
 
     def test_doPing(self):
         result = self.rpc.doPing()
         self.assertEqual(result, "up")
-
-
-if __name__ == '__main__':
-    try:
-        SENSOR_ADDRESS = sys.argv[1]
-        LOGFILE = sys.argv[2]
-    except IndexError:
-        raise ValueError("Argument(s) are missing. Here is an example for running the unittests with logfile:\n"
-                         "python test_rpc.py 192.168.0.69 True\n"
-                         "Here is an example for running the unittests without an logfile:\n"
-                         "python test_rpc.py 192.168.0.69")
-
-    device_rpc = O2x5xxRPCDevice(address=SENSOR_ADDRESS)
-    PCIC_TCP_PORT = device_rpc.getParameter(value="PcicTcpPort")
-
-    if LOGFILE:
-        FIRMWARE_VERSION = device_rpc.getSWVersion()["IFM_Software"]
-        timestamp = time.strftime("%Y%m%d-%H%M%S")
-        logfile = os.path.join('logs', '{timestamp}_{firmware}_rpc_unittests_o2x5xx.log'
-                               .format(timestamp=timestamp, firmware=FIRMWARE_VERSION))
-
-        logfile = open(logfile, 'w')
-        sys.stdout = logfile
-
-        suite = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
-        unittest.TextTestRunner(sys.stdout, verbosity=2).run(suite)
-
-        logfile.close()
-
-    else:
-        suite = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
-        unittest.TextTestRunner(verbosity=2).run(suite)
