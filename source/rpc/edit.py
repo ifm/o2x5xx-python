@@ -1,11 +1,12 @@
-from __future__ import (absolute_import, division, print_function, unicode_literals)
 import xmlrpc.client
-from .application import ApplicationConfig
-# from .device_config import DeviceConfig
-# from .network_config import NetworkConfig
+from .application import Application
 
 
 class Edit(object):
+    """
+    Edit object (singleton object)
+    """
+
     # https://stackoverflow.com/questions/51896862/how-to-create-singleton-class-with-arguments-in-python
     __instance = None
 
@@ -22,16 +23,14 @@ class Edit(object):
         self.rpc = xmlrpc.client.ServerProxy(self.url)
         self.applicationURL = self.url + 'application/'
         self.deviceURL = self.url + 'device/'
-        # self.device = xmlrpc.client.ServerProxy(self.deviceURL)
         self.networkURL = self.deviceURL + 'network/'
-        # self.network = xmlrpc.client.ServerProxy(self.networkURL)
         self._device = None
         self._network = None
         self._application = None
         self._editApplicationIndexActive = None
 
     @property
-    def application(self) -> ApplicationConfig:
+    def application(self) -> Application:
         """
         Puts a specified Application into edit-status.
         This will attach an application-object to the RPC interface.
@@ -40,33 +39,10 @@ class Edit(object):
 
         :return: ApplicationConfig object
         """
-        # self.rpc.editApplication(applicationIndex)
-        self._application = ApplicationConfig(applicationURL=self.applicationURL,
-                                              mainAPI=self.mainAPI)
+        self._application = Application(applicationURL=self.applicationURL,
+                                        sessionAPI=self.sessionAPI,
+                                        mainAPI=self.mainAPI)
         return self._application
-
-    def editApplication(self, applicationIndex: int):
-        """
-        Puts a specified Application into edit-status. This will attach an application-object to the RPC interface.
-        The name of the object will be application independent. This does not change the "ActiveApplication"-parameter.
-
-        :param applicationIndex: (int) Application index
-        :return: ApplicationConfig object
-        """
-        if not self.sessionAPI.editMode:
-            self.sessionAPI.setOperationMode(mode=1)
-        if not self._editApplicationIndexActive:
-            if applicationIndex in range(1, 32):  # start edit mode for application
-                self.rpc.editApplication(applicationIndex)
-                self._application = ApplicationConfig(applicationURL=self.applicationURL,
-                                                      mainAPI=self.mainAPI)
-                self._editApplicationIndexActive = applicationIndex
-                return self._application
-            else:
-                raise ValueError("Invalid application index")
-        else:
-            raise PermissionError("Application with index {} is already in Edit-Mode. Please first stop the Edit-Mode"
-                                  "for this application.".format(self._editApplicationIndexActive))
 
     def stopEditingApplication(self) -> None:
         """
@@ -109,14 +85,14 @@ class Edit(object):
         """
         self.rpc.deleteApplication(applicationIndex)
 
-    def changeNameAndDescription(self, applicationIndex: int, name: str = "", description: str = ""):
+    def changeNameAndDescription(self, applicationIndex: int, name: str = "", description: str = "") -> None:
         """
         Change the name and description of an application.
 
         :param applicationIndex: (int) Application index
         :param name: (str) new name of the application (utf8, max. 64 character)
         :param description: (str) new description of the application (utf8, max. 500 character)
-        :return:
+        :return: None
         """
         max_chars = 64
         if name.__len__() > max_chars:
@@ -141,6 +117,29 @@ class Edit(object):
                 app["Index"] = int(applicationIndexTo)
             move_list.append({'Id': app['Id'], 'Index': app['Index']})
         self.rpc.moveApplications(move_list)
+
+    def editApplication(self, applicationIndex: int):
+        """
+        Puts a specified Application into edit-status. This will attach an application-object to the RPC interface.
+        The name of the object will be application independent. This does not change the "ActiveApplication"-parameter.
+
+        :param applicationIndex: (int) Application index
+        :return: ApplicationConfig object
+        """
+        if not self.sessionAPI.OperationMode:
+            self.sessionAPI.setOperationMode(mode=1)
+        if not self._editApplicationIndexActive:
+            if applicationIndex in range(1, 32):  # start edit mode for application
+                self.rpc.editApplication(applicationIndex)
+                self._application = Application(applicationURL=self.applicationURL, sessionAPI=self.sessionAPI,
+                                                mainAPI=self.mainAPI)
+                self._editApplicationIndexActive = applicationIndex
+                return self._application
+            else:
+                raise ValueError("Invalid application index")
+        else:
+            raise PermissionError("Application with index {} is already in Edit-Mode. Please first stop the Edit-Mode"
+                                  "for this application.".format(self._editApplicationIndexActive))
 
     def __getattr__(self, name):
         # Forward otherwise undefined method calls to XMLRPC proxy

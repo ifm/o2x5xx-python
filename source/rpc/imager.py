@@ -1,40 +1,65 @@
 import time
 import xmlrpc.client
-from .imageQualityCheck import ImageQualityCheckConfig
+from .imageQualityCheck import ImageQualityCheck
 import json
 
 
-class ImagerConfig(object):
-    def __init__(self, imageURL, mainAPI, applicationAPI):
+class Imager(object):
+    """
+    Imager object
+    """
+
+    def __init__(self, imageURL, mainAPI, sessionAPI, applicationAPI):
         self.imageURL = imageURL
+        self.sessionAPI = sessionAPI
         self.applicationAPI = applicationAPI
         self.mainAPI = mainAPI
         self.rpc = xmlrpc.client.ServerProxy(self.imageURL)
-        self._imageQualityCheckConfig = None
+        self._imageQualityCheck = None
 
     def getAllParameters(self):
+        """
+        Returns all parameters of the object in one data-structure. For an overview which parameters can be request use
+        the method get_all_parameters().
+
+        :return: (dict) name contains parameter-name, value the stringified parameter-value
+        """
         result = self.rpc.getAllParameters()
         return result
 
     def getParameter(self, value):
+        """
+        Returns the current value of the parameter.
+
+        :param value: (str) parameter name
+        :return: (str)
+        """
         result = self.rpc.getParameter(value)
         return result
 
     def getAllParameterLimits(self):
+        """
+        Returns limits and default values of all
+            1. numeric parameters that have limits in terms of minimum and maximum value
+            2. parameters whose values are limited by a set of values (enum-like)
+
+        :return: (dict)
+        """
         result = self.rpc.getAllParameterLimits()
         return result
 
     @property
-    def ImageQualityCheckConfig(self):
+    def ImageQualityCheck(self) -> ImageQualityCheck:
         """
-        # TODO
+        Request an Image Quality Check object for parametrizing the thresholds
+        of the Image Quality check KPIs (key performance indicator).
 
-        :return:
+        :return: ImageQualityCheck object
         """
-        self._imageQualityCheckConfig = ImageQualityCheckConfig(imageURL=self.imageURL,
-                                                                imageRPC=self.rpc,
-                                                                applicationAPI=self.applicationAPI)
-        return self._imageQualityCheckConfig
+        self._imageQualityCheck = ImageQualityCheck(imageURL=self.imageURL,
+                                                    imageRPC=self.rpc,
+                                                    applicationAPI=self.applicationAPI)
+        return self._imageQualityCheck
 
     @property
     def Type(self) -> str:
@@ -74,10 +99,10 @@ class ImagerConfig(object):
         """
         Returns the kind of illumination used while capturing images.
 
-        :return: (int) 1 digit <br />
-                       0: no illumination active <br />
-                       1: internal illumination shall be used <br />
-                       2: external illumination shall be used <br />
+        :return: (int) 1 digit 
+                       0: no illumination active 
+                       1: internal illumination shall be used 
+                       2: external illumination shall be used 
                        3: internal and external illumination shall be used together
         """
         result = int(self.getParameter("Illumination"))
@@ -88,10 +113,10 @@ class ImagerConfig(object):
         """
         Defines which kind of illumination shall be used while capturing images.
 
-        :param value: (int) 1 digit <br />
-                            0: no illumination active <br />
-                            1: internal illumination shall be used <br />
-                            2: external illumination shall be used <br />
+        :param value: (int) 1 digit 
+                            0: no illumination active 
+                            1: internal illumination shall be used 
+                            2: external illumination shall be used 
                             3: internal and external illumination shall be used together
         :return: None
         """
@@ -108,10 +133,10 @@ class ImagerConfig(object):
         Defines which segments of the internal illumination is used while capturing images.
         All directions are meant in view direction on top of the imager/device (not FOV!).
 
-        :return: (dict) (dict) dict with LED segments enabled/disabled <br />
-                          upper-left: (bool) enable/disable upper-left LED <br />
-                          upper-Right: (bool) enable/disable upper-right LED <br />
-                          lower-Left: (bool) enable/disable lower-left LED <br />
+        :return: (dict) (dict) dict with LED segments enabled/disabled 
+                          upper-left: (bool) enable/disable upper-left LED 
+                          upper-Right: (bool) enable/disable upper-right LED 
+                          lower-Left: (bool) enable/disable lower-left LED 
                           lower-Right: (bool) enable/disable lower-Right LED
         """
         result = self.getParameter("IlluInternalSegments")
@@ -125,13 +150,13 @@ class ImagerConfig(object):
         Defines which segments of the internal illumination shall be used while capturing images.
         All directions are meant in view direction on top of the imager/device (not FOV!).
 
-        :param inputDict: (dict) dict with LED segments <br />
-                          syntax example: <br />
+        :param inputDict: (dict) dict with LED segments 
+                          syntax example: 
                           {"upper-left": True, "upper-right": True,
-                          "lower-left": True, "lower-right": True}  <br />
-                          upper-left: (bool) enable/disable upper-left LED <br />
-                          upper-Right: (bool) enable/disable upper-right LED <br />
-                          lower-Left: (bool) enable/disable lower-left LED <br />
+                          "lower-left": True, "lower-right": True}  
+                          upper-left: (bool) enable/disable upper-left LED 
+                          upper-Right: (bool) enable/disable upper-right LED 
+                          lower-Left: (bool) enable/disable lower-left LED 
                           lower-Right: (bool) enable/disable lower-Right LED
         :return: None
         """
@@ -148,15 +173,15 @@ class ImagerConfig(object):
         """
         RGB-W illumination selection for this image.
 
-        :return: (int / None) 1 digit <br />
-                              0: white <br />
-                              1: green <br />
-                              2: blue <br />
-                              3: red <br />
+        :return: (int / None) 1 digit 
+                              0: white 
+                              1: green 
+                              2: blue 
+                              3: red 
                               None: infrared
         """
         if "Color" in self.getAllParameters().keys():
-            result = self.getParameter("Color")
+            result = int(self.getParameter("Color"))
             return result
         return None
 
@@ -165,16 +190,16 @@ class ImagerConfig(object):
         """
         RGB-W illumination selection for the image.
 
-        :param value: (int) 1 digit <br />
-                            0: white <br />
-                            1: green <br />
-                            2: blue <br />
+        :param value: (int) 1 digit 
+                            0: white 
+                            1: green 
+                            2: blue 
                             3: red
         :return: None
         """
         if "Color" in self.getAllParameters().keys():
             limits = self.getAllParameterLimits()["Color"]
-            if value not in range(int(limits["min"]), int(limits["max"]), 1):
+            if not int(limits["min"]) <= value <= int(limits["max"]):
                 raise ValueError("Color value not available. Available range: {}"
                                  .format(self.getAllParameterLimits()["Color"]))
             self.rpc.setParameter("Color", value)
@@ -238,11 +263,11 @@ class ImagerConfig(object):
         """
         Selected Filter Type for acquired image.
 
-        :return (int) Filter selection <br />
-                0: no filter <br />
-                1: erosion <br />
-                2: dilatation <br />
-                3: median <br />
+        :return (int) Filter selection 
+                0: no filter 
+                1: erosion 
+                2: dilatation 
+                3: median 
                 4: mean
         """
         result = int(self.getParameter("FilterType"))
@@ -253,11 +278,11 @@ class ImagerConfig(object):
         """
         Set Filter Type for acquired image.
 
-        :param value: (int) Possible filter selection <br />
-               0: no filter <br />
-               1: erosion <br />
-               2: dilatation <br />
-               3: median <br />
+        :param value: (int) Possible filter selection 
+               0: no filter 
+               1: erosion 
+               2: dilatation 
+               3: median 
                4: mean
         :return: None
         """
@@ -344,6 +369,8 @@ class ImagerConfig(object):
 
         :return: None
         """
+        # This is required due to the long autofocus progress which may take longer than 10 seconds (default)
+        self.sessionAPI.heartbeat(heartbeatInterval=30)
         self.rpc.startCalculateAutofocus()
         while self.getProgressCalculateAutofocus() < 1.0:
             time.sleep(1)

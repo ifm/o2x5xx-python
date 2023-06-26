@@ -1,8 +1,8 @@
 from __future__ import (absolute_import, division, print_function)
 from builtins import *
-from o2x5xx.pcic.client import O2x5xxPCICDevice
-from o2x5xx.static.formats import serialization_format
-from o2x5xx.static.configs import images_config
+from source.pcic.client import O2x5xxPCICDevice
+from source.static.formats import serialization_format
+from source.static.configs import images_config
 import binascii
 import struct
 import io

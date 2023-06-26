@@ -1,4 +1,4 @@
-from o2x5xx.static.formats import error_codes, serialization_format
+from source.static.formats import error_codes, serialization_format
 import matplotlib.image as mpimg
 import binascii
 import socket
@@ -98,19 +98,34 @@ class O2x5xxPCICDevice(PCICV3Client):
 
         super(O2x5xxPCICDevice, self).__init__(address, port)
 
-    def activate_application(self, number):
+    def activate_application(self, application_number: [str, int]) -> str:
         """
         Activates the selected application.
 
-        :param number: (int) 2 digits for the application number as decimal value
-        :return: - * Command was successful <br />
-                 - ! Application not available
-                   | &lt;application number> contains wrong value
-                   | External application switching activated
-                   | Device is in an invalid state for the command, e.g. configuration mode <br />
-                 - ? Invalid command length
+        Parameters
+        ----------
+        application_number :
+            2 digits for the application number.
+
+            - '01': IO1
+
+            - '02': IO2
+
+        Returns
+        -------
+        result :
+            sensor feedback code
+
+            - \* Command was successful
+
+            - ! Application not available
+              | <application number> contains wrong value
+              | External application switching activated
+              | Device is in an invalid state for the command, e.g. configuration mode
+
+            - ? Invalid command length
         """
-        command = 'a' + str(number).zfill(2)
+        command = 'a' + str(application_number).zfill(2)
         result = self.send_command(command)
         result = result.decode()
         return result
@@ -119,18 +134,27 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Requests the occupancy of the application list.
 
-        :return: Syntax: &lt;amount>&lt;t>&lt;number active application>&lt;t> ... &lt;number>&lt;t>&lt;number> <br />
-                 e.g. 015    15  01  02	03	04	05	06	07	08	09	10	11	12	13	14	15 <br />
-                 - &lt;amount> char string with 3 digits for the amount of applications
-                   saved on the device as decimal number <br />
-                 - &lt;t> tabulator (0x09) <br />
-                 - &lt;number active application> 2 digits for the active application <br />
-                 - &lt;number> 2 digits for the application number <br />
-                 - ! Application not available
-                   | &lt;application number> contains wrong value
-                   | External application switching activated
-                   | Device is in an invalid state for the command, e.g. configuration mode <br />
-                 - ? Invalid command length
+        Returns
+        -------
+        result :
+                - Syntax: <amount><t><number active application><t> ... <number><t><number>
+                  e.g. 015    15  01  02	03	04	05	06	07	08	09	10	11	12	13	14	15
+
+                - <amount> char string with 3 digits for the amount of applications
+                saved on the device as decimal number
+
+                - <t> tabulator (0x09)
+
+                - <number active application> 2 digits for the active application
+
+                - <number> 2 digits for the application number
+
+                - ! Application not available
+                  | <application number> contains wrong value
+                  | External application switching activated
+                  | Device is in an invalid state for the command, e.g. configuration mode
+
+                - ? Invalid command length
         """
         result = self.send_command('A?')
         result = result.decode()
@@ -141,9 +165,9 @@ class O2x5xxPCICDevice(PCICV3Client):
         Uploads a Process interface output configuration lasting this session.
 
         :param config: (dict) configuration data
-        :return: - * Command was successful <br />
+        :return: - * Command was successful
                  - ! Error in configuration
-                   | Wrong data length <br />
+                   | Wrong data length
                  - ? Invalid command length
         """
         config = json.dumps(config)
@@ -156,9 +180,9 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Retrieves the current Process interface configuration.
 
-        :return: Syntax: &lt;length>&lt;configuration> <br />
-                 - &lt;length> 9 digits as decimal value for the data length <br />
-                 - &lt;configuration> configuration data <br />
+        :return: Syntax: <length><configuration> 
+                 - <length> 9 digits as decimal value for the data length 
+                 - <configuration> configuration data 
                  - ? Invalid command length
         """
         result = self.send_command('C?')
@@ -169,10 +193,10 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Requests the current error state.
 
-        :return: Syntax: &lt;code> <br />
-                 - &lt;code> Error code with 8 digits as a decimal value. It contains leading zeros. <br />
-                 - ! Invalid state (e.g. configuration mode) <br />
-                 - ? Invalid command length <br />
+        :return: Syntax: <code> 
+                 - <code> Error code with 8 digits as a decimal value. It contains leading zeros. 
+                 - ! Invalid state (e.g. configuration mode) 
+                 - ? Invalid command length 
                  - $ Error code unknown
         """
         result = self.send_command('E?')
@@ -183,11 +207,11 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Requests the current error state and error message as a tuple.
 
-        :return: Syntax: [&lt;code>,&lt;error_message>] <br />
-                 - &lt;code> Error code with 8 digits as a decimal value. It contains leading zeros. <br />
-                 - &lt;error_message> The corresponding error message to the error code. <br />
-                 - ! Invalid state (e.g. configuration mode) <br />
-                 - ? Invalid command length <br />
+        :return: Syntax: [<code>,<error_message>] 
+                 - <code> Error code with 8 digits as a decimal value. It contains leading zeros. 
+                 - <error_message> The corresponding error message to the error code. 
+                 - ! Invalid state (e.g. configuration mode) 
+                 - ? Invalid command length 
                  - $ Error code unknown
         """
         result = self.request_current_error_state()
@@ -202,11 +226,11 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Turn gated software trigger on or off.
 
-        :param state: (int) 1 digit <br />
-                      "0": turn gated software trigger off <br />
+        :param state: (int) 1 digit 
+                      "0": turn gated software trigger off 
                       "1": turn gated software trigger on
-        :return: - * Trigger could be executed <br />
-                 - ! Invalid argument, invalid state, trigger already executed <br />
+        :return: - * Trigger could be executed 
+                 - ! Invalid argument, invalid state, trigger already executed 
                  - ? Something else went wrong
         """
         result = self.send_command('g{state}'.format(state=state))
@@ -217,22 +241,22 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Requests device information.
 
-        :return: Syntax: <br />
-                 &lt;vendor>&lt;t>&lt;article number>&lt;t>&lt;name>&lt;t>&lt;location>&lt;t>
-                 &lt;description>&lt;t>&lt;ip>&lt;subnet mask>&lt;t>&lt;gateway>&lt;t>&lt;MAC>&lt;t>
-                 &lt;DHCP>&lt;t>&lt;port number> <br />
-                 - &lt;vendor>            IFM ELECTRONIC <br />
-                 - &lt;t>                 Tabulator (0x09) <br />
-                 - &lt;article number>    e.g. O2D500 <br />
-                 - &lt;name>              UTF8 Unicode string <br />
-                 - &lt;location>          UTF8 Unicode string <br />
-                 - &lt;description>       UTF8 Unicode string <br />
-                 - &lt;ip>                IP address of the device as ASCII character sting e.g. 192.168.0.69 <br />
-                 - &lt;port number>       port number of the XML-RPC <br />
-                 - &lt;subnet mask>       subnet mask of the device as ASCIIe.g. 192.168.0.69 <br />
-                 - &lt;gateway>           gateway of the device as ASCIIe.g 192.168.0.69 <br />
-                 - &lt;MAC>               MAC address of the device as ASCIIe.g. AA:AA:AA:AA:AA:AA <br />
-                 - &lt;DHCP>              ASCII string "0" for off and "1" for on
+        :return: Syntax: 
+                 <vendor><t><article number><t><name><t><location><t>
+                 <description><t><ip><subnet mask><t><gateway><t><MAC><t>
+                 <DHCP><t><port number> 
+                 - <vendor>            IFM ELECTRONIC 
+                 - <t>                 Tabulator (0x09) 
+                 - <article number>    e.g. O2D500 
+                 - <name>              UTF8 Unicode string 
+                 - <location>          UTF8 Unicode string 
+                 - <description>       UTF8 Unicode string 
+                 - <ip>                IP address of the device as ASCII character sting e.g. 192.168.0.69 
+                 - <port number>       port number of the XML-RPC 
+                 - <subnet mask>       subnet mask of the device as ASCIIe.g. 192.168.0.69 
+                 - <gateway>           gateway of the device as ASCIIe.g 192.168.0.69 
+                 - <MAC>               MAC address of the device as ASCIIe.g. AA:AA:AA:AA:AA:AA 
+                 - <DHCP>              ASCII string "0" for off and "1" for on
         """
         result = self.send_command('G?')
         result = result.decode()
@@ -242,28 +266,28 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Returns a list of available commands.
 
-        :return: - H?                        show this list <br />
-                 - t                         execute Trigger <br />
-                 - T?                        execute Trigger and wait for data <br />
-                 - g&lt;state>               turn gated software trigger on or off <br />
-                 - o&lt;io-id><io-state>     set IO state <br />
-                 - O&lt;io-id>?              get IO state <br />
-                 - I&lt;image-id>?           get last image of defined type <br />
-                 - A?                        get application list <br />
-                 - p&lt;state>               activate / deactivate data output <br />
-                 - a&lt;application number>  set active application <br />
-                 - E?                        get last Error <br />
-                 - V?                        get current protocol version <br />
-                 - v&lt;version>             get protocol version <br />
-                 - c&lt;length of configuration file><configuration file>
-                                             configure process data formatting <br />
-                 - C?                        show current configuration <br />
-                 - G?                        show device information <br />
-                 - S?                        show statistics <br />
-                 - L?                        retrieves the connection id <br />
-                 - j&lt;id>&lt;length><data> sets string data under specific ID <br />
-                 - J&lt;id>?                 reads string defined under specific ID <br />
-                 - d&lt;on-off state of view indicator>&lt;duration> turn the view indicators on
+        :return: - H?                        show this list 
+                 - t                         execute Trigger 
+                 - T?                        execute Trigger and wait for data 
+                 - g<state>               turn gated software trigger on or off 
+                 - o<io-id><io-state>     set IO state 
+                 - O<io-id>?              get IO state 
+                 - I<image-id>?           get last image of defined type 
+                 - A?                        get application list 
+                 - p<state>               activate / deactivate data output 
+                 - a<application number>  set active application 
+                 - E?                        get last Error 
+                 - V?                        get current protocol version 
+                 - v<version>             get protocol version 
+                 - c<length of configuration file><configuration file>
+                                             configure process data formatting 
+                 - C?                        show current configuration 
+                 - G?                        show device information 
+                 - S?                        show statistics 
+                 - L?                        retrieves the connection id 
+                 - j<id><length><data> sets string data under specific ID 
+                 - J<id>?                 reads string defined under specific ID 
+                 - d<on-off state of view indicator><duration> turn the view indicators on
                                              (permanently or for a defined time) or off
         """
         result = self.send_command('H?')
@@ -274,14 +298,14 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Request last image taken.
 
-        :param image_id: (int) 2 digits for the image type <br />
-                         1: all JPEG images <br />
+        :param image_id: (int) 2 digits for the image type 
+                         1: all JPEG images 
                          2: all uncompressed images
-        :return: Syntax: &lt;length>&lt;image data> <br />
-                 - &lt;length> (int) char string with exactly 9 digits as decimal number for the image data size in bytes. <br />
-                 - &lt;image data> (bytearray) image data / result data. The data is encapsulated in an image chunk. <br />
+        :return: Syntax: <length><image data> 
+                 - <length> (int) char string with exactly 9 digits as decimal number for the image data size in bytes. 
+                 - <image data> (bytearray) image data / result data. The data is encapsulated in an image chunk. 
                  - ! No image available
-                   | Wrong ID <br />
+                   | Wrong ID 
                  - ? Invalid command length
         """
         if str(image_id).isnumeric():
@@ -294,18 +318,18 @@ class O2x5xxPCICDevice(PCICV3Client):
         Request last image taken deserialized in image header and image data. Image data can be requested as bytes
         or decoded as ndarray datatype.
 
-        :param image_id: (int) 2 digits for the image type <br />
-                         1: all JPEG images <br />
+        :param image_id: (int) 2 digits for the image type 
+                         1: all JPEG images 
                          2: all uncompressed images
-        :param datatype: (str) image output as hex or ndarray datatype <br />
-                         bytes: image(s) as bytes datatype <br />
+        :param datatype: (str) image output as hex or ndarray datatype 
+                         bytes: image(s) as bytes datatype 
                          ndarray: image(s) as ndarray datatype
-        :return: Syntax: [&lt;header>,&lt;image data>] <br />
-                 - &lt;header> (dict) header of the image deserialized as dict object <br />
-                 - &lt;image data> image data / result data. The data is encapsulated
-                 in an image chunk if bytes as datatype is selected. <br />
+        :return: Syntax: [<header>,<image data>] 
+                 - <header> (dict) header of the image deserialized as dict object 
+                 - <image data> image data / result data. The data is encapsulated
+                 in an image chunk if bytes as datatype is selected. 
                  - ! No image available
-                   | Wrong ID <br />
+                   | Wrong ID 
                  - ? Invalid command length
         """
         results = {}
@@ -347,9 +371,9 @@ class O2x5xxPCICDevice(PCICV3Client):
 
         :param container_id: (int) number from 00 to 09
         :param data: (string) string of a maximum size of 256 bytes
-        :return: - * Command was successful <br />
+        :return: - * Command was successful 
                  - ! Invalid argument or invalid state (other than run mode)
-                   | Not existing element with input-container-ID in logic layer <br />
+                   | Not existing element with input-container-ID in logic layer 
                  - ? Syntax error
         """
         if str(container_id).isnumeric():
@@ -365,11 +389,11 @@ class O2x5xxPCICDevice(PCICV3Client):
         The string is represented as byte array.
 
         :param container_id: (int) number from 00 to 09
-        :return: Syntax: &lt;length>&lt;data> <br />
-                 - &lt;length>: 9 digits as decimal value for the data length <br />
-                 - &lt;data>: content of byte array <br />
+        :return: Syntax: <length><data> 
+                 - <length>: 9 digits as decimal value for the data length 
+                 - <data>: content of byte array 
                  - ! Invalid argument or invalid state (other than run mode)
-                   | Not existing element with input-container-ID in logic layer <br />
+                   | Not existing element with input-container-ID in logic layer 
                  - ? Syntax error
         """
         if str(container_id).isnumeric():
@@ -392,22 +416,22 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Sets the logic state of a specific ID.
 
-        :param io_id: (int) 2 digits for digital output <br />
-                      "01": IO1 <br />
+        :param io_id: (int) 2 digits for digital output
+                      "01": IO1
                       "02": IO2
-        :param state: (int) 1 digit for the state <br />
-                      "0": logic state low <br />
+        :param state: (int) 1 digit for the state 
+                      "0": logic state low 
                       "1": logic state high
-        :return: Syntax: &lt;IO-ID>&lt;IO-state> <br />
-                 - &lt;IO-ID> 2 digits for digital output <br />
-                 "01": IO1 <br />
-                 "02": IO2 <br />
-                 - &lt;IO-state> 1 digit for the state <br />
-                 "0": logic state low <br />
-                 "1": logic state high <br />
+        :return: Syntax: <IO-ID><IO-state> 
+                 - <IO-ID> 2 digits for digital output 
+                 "01": IO1 
+                 "02": IO2 
+                 - <IO-state> 1 digit for the state 
+                 "0": logic state low 
+                 "1": logic state high 
                  - ! Invalid state (e.g. configuration mode)
                    | Wrong ID
-                   | Element PCIC Output not connected to DIGITAL_OUT element in logic layer <br />
+                   | Element PCIC Output not connected to DIGITAL_OUT element in logic layer 
                  - ? Invalid command length
         """
         if str(io_id).isnumeric():
@@ -416,24 +440,110 @@ class O2x5xxPCICDevice(PCICV3Client):
         result = result.decode()
         return result
 
+    def set_logic_state_of_an_id2(self, io_id, state):
+        """
+        This is a reST style.
+
+        :param io_id : (int)
+        2 digits for digital output
+            * "01": IO1
+            * "02": IO2
+        :param state : (str)
+        this is a second param
+            * "01": IO1
+            * "02": IO2
+        :returns: this is a description of what is returned
+        :raises keyError: raises an exception
+        """
+        if str(io_id).isnumeric():
+            io_id = str(io_id).zfill(2)
+        result = self.send_command('o{io_id}{state}'.format(io_id=io_id, state=str(state)))
+        result = result.decode()
+        return result
+
+    def foo(self, array, pad_width, mode):
+        """
+        Activates the selected application.
+
+        Parameters
+        ----------
+        array : array_like of rank N
+            The array to pad.
+        pad_width : {sequence, array_like, int}
+            Number of values padded to the edges of each axis.
+            ((before_1, after_1), ... (before_N, after_N)) unique pad widths
+            for each axis.
+            ((before, after),) yields same before and after pad for each axis.
+            (pad,) or int is a shortcut for before = after = pad width for all
+            axes.
+        mode : str or function, optional
+            One of the following string values or a user supplied function.
+
+            'constant' (default)
+                Pads with a constant value.
+            'edge'
+                Pads with the edge values of array.
+            'linear_ramp'
+                Pads with the linear ramp between end_value and the
+                array edge value.
+            'maximum'
+                Pads with the maximum value of all or part of the
+                vector along each axis.
+            'mean'
+                Pads with the mean value of all or part of the
+                vector along each axis.
+            'median'
+                Pads with the median value of all or part of the
+                vector along each axis.
+            'minimum'
+                Pads with the minimum value of all or part of the
+                vector along each axis.
+            'reflect'
+                Pads with the reflection of the vector mirrored on
+                the first and last values of the vector along each
+                axis.
+            'symmetric'
+                Pads with the reflection of the vector mirrored
+                along the edge of the array.
+            'wrap'
+                Pads with the wrap of the vector along the axis.
+                The first values are used to pad the end and the
+                end values are used to pad the beginning.
+            'empty'
+                Pads with undefined values.
+
+                .. versionadded:: 1.17
+
+            <function>
+                Padding function, see Notes.
+
+        Returns
+        -------
+        pad : ndarray
+            Padded array of rank equal to `array` with shape increased
+            according to `pad_width`.
+        """
+        pad = 2
+        return pad
+
     def request_state_of_an_id(self, io_id):
         """
         Requests the state of a specific ID.
 
-        :param io_id: 2 digits for digital output <br />
-                      "01": IO1 <br />
+        :param io_id: 2 digits for digital output 
+                      "01": IO1 
                       "02": IO2
-        :return: Syntax: &lt;IO-ID>&lt;IO-state> <br />
-                 - &lt;IO-ID> 2 digits for digital output <br />
-                 "01": IO1 <br />
-                 "02": IO2 <br />
-                 - &lt;IO-state> 1 digit for the state <br />
-                 "0": logic state low <br />
-                 "1": logic state high <br />
+        :return: Syntax: <IO-ID><IO-state> 
+                 - <IO-ID> 2 digits for digital output 
+                 "01": IO1 
+                 "02": IO2 
+                 - <IO-state> 1 digit for the state 
+                 "0": logic state low 
+                 "1": logic state high 
                  - ! Invalid state (e.g. configuration mode)
                    | Wrong ID
                    | Element PCIC Output not connected to DIGITAL_OUT element in logic layer
-                   (only valid for FW lower 1.30.40100) <br />
+                   (only valid for FW lower 1.30.40100) 
                  - ? Invalid command length
         """
         if str(io_id).isnumeric():
@@ -447,17 +557,17 @@ class O2x5xxPCICDevice(PCICV3Client):
         Turns the Process interface output on or off. Be aware that this modification only
         affects the own session and is not considered to be a global parameter.
 
-        :param state: (int) 1 digit <br />
-                      0: deactivates all asynchronous output <br />
-                      1: activates asynchronous result output <br />
-                      2: activates asynchronous error output <br />
-                      3: activates asynchronous error and data output <br />
-                      4: activates asynchronous notifications <br />
-                      5: activates asynchronous notifications and asynchronous result <br />
-                      6: activates asynchronous notifications and asynchronous error output <br />
+        :param state: (int) 1 digit 
+                      0: deactivates all asynchronous output 
+                      1: activates asynchronous result output 
+                      2: activates asynchronous error output 
+                      3: activates asynchronous error and data output 
+                      4: activates asynchronous notifications 
+                      5: activates asynchronous notifications and asynchronous result 
+                      6: activates asynchronous notifications and asynchronous error output 
                       7: activates all outputs
-        :return: - * Command was successful <br />
-                 - ! &lt;state>: contains wrong value <br />
+        :return: - * Command was successful 
+                 - ! <state>: contains wrong value 
                  - ? Invalid command length
         """
         result = self.send_command('p{state}'.format(state=str(state)))
@@ -468,15 +578,15 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Requests current decoding statistics.
 
-        :return: Syntax: &lt;number of results>&lt;t>&lt;number of positive decodings>&lt;t>&lt;number of false
-                         decodings> <br />
-                 - &lt;t> tabulator (0x09) <br />
-                 - &lt;number of results> Images taken since application start. 10 digits decimal value with
-                   leading "0" <br />
-                 - &lt;number of positive decodings> Number of decodings leading to a positive result. 10 digits
-                   decimal value with leading "0" <br />
-                 - &lt;number of false decodings> Number of decodings leading to a negative result. 10 digits
-                   decimal value with leading "0" <br />
+        :return: Syntax: <number of results><t><number of positive decodings><t><number of false
+                         decodings> 
+                 - <t> tabulator (0x09) 
+                 - <number of results> Images taken since application start. 10 digits decimal value with
+                   leading "0" 
+                 - <number of positive decodings> Number of decodings leading to a positive result. 10 digits
+                   decimal value with leading "0" 
+                 - <number of false decodings> Number of decodings leading to a negative result. 10 digits
+                   decimal value with leading "0" 
                  - ! No application active
         """
         result = self.send_command('S?')
@@ -486,12 +596,12 @@ class O2x5xxPCICDevice(PCICV3Client):
     def execute_asynchronous_trigger(self):
         """
         Executes trigger. The result data is send asynchronously.
-        Only compatible with configured trigger source "Process Interface" on the sensor.
+        Only compatible with configured trigger "Process Interface" on the sensor.
 
-        :return: - * Trigger was executed, the device captures an image and evaluates the result. <br />
+        :return: - * Trigger was executed, the device captures an image and evaluates the result. 
                  - ! Device is busy with an evaluation
                    | Device is in an invalid state for the command, e.g. configuration mode
-                   | Device is set to a different trigger source
+                   | Device is set to a different trigger
                    | No active application
         """
         result = self.send_command('t')
@@ -501,12 +611,12 @@ class O2x5xxPCICDevice(PCICV3Client):
     def execute_synchronous_trigger(self):
         """
         Executes trigger. The result data is send synchronously.
-        Only compatible with configured trigger source "Process Interface" on the sensor.
+        Only compatible with configured trigger "Process Interface" on the sensor.
 
-        :return: - (str) decoded data output of process interface  <br />
+        :return: - (str) decoded data output of process interface  
                  - ! Device is busy with an evaluation
                    | Device is in an invalid state for the command, e.g. configuration mode
-                   | Device is set to a different trigger source
+                   | Device is set to a different trigger 
                    | No active application
         """
         result = self.send_command('T?')
@@ -518,8 +628,8 @@ class O2x5xxPCICDevice(PCICV3Client):
         Sets the current protocol version. The device configuration is not affected.
 
         :param version: 2 digits for the protocol version. Only protocol version V3 is supported.
-        :return: - * Command was successful <br />
-                 - ! Invalid version <br />
+        :return: - * Command was successful 
+                 - ! Invalid version 
                  - ? Invalid command length
         """
         if str(version).isnumeric():
@@ -532,10 +642,10 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Requests current protocol version.
 
-        :return: Syntax: &lt;current version>&lt;empty>&lt;min version>&lt;empty>&lt;max version> <br />
-                 - &lt;current version> 2 digits for the currently set version <br />
-                 - &lt;empty> space sign 0x20 <br />
-                 - &lt;min/max version> 2 digits for the available min and max version that can be set
+        :return: Syntax: <current version><empty><min version><empty><max version> 
+                 - <current version> 2 digits for the currently set version 
+                 - <empty> space sign 0x20 
+                 - <min/max version> 2 digits for the available min and max version that can be set
         """
         result = self.send_command('V?')
         result = result.decode()
@@ -547,14 +657,14 @@ class O2x5xxPCICDevice(PCICV3Client):
 
         Syntax: d<on-off state of view indicator><duration>
 
-        :param state: (int) duration time in seconds <br />
-                      0: turn the view indicators off <br />
+        :param state: (int) duration time in seconds 
+                      0: turn the view indicators off 
                       1: turn the view indicators on
         :param duration: (int) duration time in seconds (parameter has no impact if you turn indicators off)
-        :return: - * Command was successful <br />
+        :return: - * Command was successful 
                  - ! Invalid state (e.g. configuration mode)
                    | Wrong state
-                   | Wrong duration <br />
+                   | Wrong duration 
                  - ? Invalid command length
         """
         if str(duration).isnumeric():
@@ -567,7 +677,7 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         Execute the currently configured button functionality.
 
-        :return: - * Button functionality was executed without an error. <br />
+        :return: - * Button functionality was executed without an error. 
                  - ! no button function configured
                    | button function already running
                    | button function caused an error

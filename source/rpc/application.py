@@ -1,28 +1,26 @@
 import xmlrpc.client
 import json
-from .imager import ImagerConfig
+from .imager import Imager
 
 
-class ApplicationConfig(object):
-    def __init__(self, applicationURL, mainAPI):
+class Application(object):
+    """
+    Application object
+    """
+
+    def __init__(self, applicationURL, sessionAPI, mainAPI):
         self.url = applicationURL
+        self.sessionAPI = sessionAPI
         self.mainAPI = mainAPI
         self.rpc = xmlrpc.client.ServerProxy(self.url)
         self.imagerConfigURL = self.url + 'imager_{0:03d}/'
 
-    def editImage(self, imageIndex: int):
-        imageIDs = [int(x["Id"]) for x in self.getImagerConfigList()]
-        if imageIndex not in imageIDs:
-            raise ValueError("Image index {} not available. Choose one imageIndex from following"
-                             "ImagerConfigList or create a new one with method createImagerConfig():\n{}"
-                             .format(imageIndex, self.getImagerConfigList()))
-        return ImagerConfig(self.imagerConfigURL.format(imageIndex), mainAPI=self.mainAPI, applicationAPI=self.rpc)
-
     def getAllParameters(self):
         """
-        Returns all parameters of the object in one data-structure.
+        Returns all parameters of the object in one data-structure. For an overview which parameters can be request use
+        the method get_all_parameters().
 
-        :return:
+        :return: (dict) name contains parameter-name, value the stringified parameter-value
         """
         result = self.rpc.getAllParameters()
         return result
@@ -37,22 +35,45 @@ class ApplicationConfig(object):
         result = self.rpc.getParameter(value)
         return result
 
-    def getAllParameterLimits(self):
+    def getAllParameterLimits(self) -> dict:
+        """
+        Returns limits and default values of all
+            1. numeric parameters that have limits in terms of minimum and maximum value
+            2. parameters whose values are limited by a set of values (enum-like)
+
+        :return: (dict)
+        """
         result = self.rpc.getAllParameterLimits()
         return result
 
     @property
     def Type(self) -> str:
+        """
+        Type of the device
+
+        :return: (str)
+        """
         result = self.getParameter("Type")
         return result
 
     @property
     def Name(self) -> str:
+        """
+        User defined name of the application.
+
+        :return: (str)
+        """
         result = self.getParameter("Name")
         return result
 
     @Name.setter
     def Name(self, value: str) -> None:
+        """
+        User defined name of the application.
+
+        :param value: (str) Max. 64 characters
+        :return: None
+        """
         max_chars = 64
         if value.__len__() > max_chars:
             raise ValueError("Max. {} characters".format(max_chars))
@@ -61,11 +82,22 @@ class ApplicationConfig(object):
 
     @property
     def Description(self) -> str:
+        """
+        User defined description of the application.
+
+        :return: (str)
+        """
         result = self.getParameter("Description")
         return result
 
     @Description.setter
     def Description(self, value: str) -> None:
+        """
+        User defined description of the application.
+
+        :param value: (str) Max. 500 characters
+        :return: None
+        """
         max_chars = 500
         if value.__len__() > 500:
             raise ValueError("Max. {} characters".format(max_chars))
@@ -74,6 +106,19 @@ class ApplicationConfig(object):
 
     @property
     def TriggerMode(self) -> int:
+        """
+        Current set trigger mode for the application.
+
+        :return: (int) 1 digit
+                 1: free run (continuous mode)
+                 2: process interface
+                 3: positive edge
+                 4: negative edge
+                 5: positive and negative edge
+                 6: gated HW
+                 7: gated process interface
+                 8: time controlled gated HW
+        """
         result = int(self.getParameter("TriggerMode"))
         return result
 
@@ -82,14 +127,14 @@ class ApplicationConfig(object):
         """
         Selects the trigger mode for the application.
 
-        :param value: (int) 1 digit <br />
-                      1: free run (continuous mode) <br />
-                      2: process interface <br />
-                      3: positive edge <br />
-                      4: negative edge  <br />
-                      5: positive and negative edge <br />
-                      6: gated HW <br />
-                      7: gated process interface <br />
+        :param value: (int) 1 digit
+                      1: free run (continuous mode)
+                      2: process interface
+                      3: positive edge
+                      4: negative edge
+                      5: positive and negative edge
+                      6: gated HW
+                      7: gated process interface
                       8: time controlled gated HW
         :return: None
         """
@@ -309,3 +354,21 @@ class ApplicationConfig(object):
         """
         self.rpc.waitForConfigurationDone()
 
+    def editImage(self, imageIndex: int):
+        """
+        Requests an Imager object specified by the image index.
+        
+        :param imageIndex: (int) index of image from ImagerConfigList
+        :return: Imager (object)
+        """
+        imageIDs = [int(x["Id"]) for x in self.getImagerConfigList()]
+        if imageIndex not in imageIDs:
+            raise ValueError("Image index {} not available. Choose one imageIndex from following"
+                             "ImagerConfigList or create a new one with method createImagerConfig():\n{}"
+                             .format(imageIndex, self.getImagerConfigList()))
+        return Imager(self.imagerConfigURL.format(imageIndex), mainAPI=self.mainAPI,
+                      sessionAPI=self.sessionAPI, applicationAPI=self.rpc)
+
+    def __getattr__(self, name):
+        # Forward otherwise undefined method calls to XMLRPC proxy
+        return getattr(self.rpc, name)
