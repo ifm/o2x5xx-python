@@ -107,10 +107,6 @@ class O2x5xxPCICDevice(PCICV3Client):
         application_number :
             2 digits for the application number.
 
-            - '01': IO1
-
-            - '02': IO2
-
         Returns
         -------
         result :
@@ -460,71 +456,6 @@ class O2x5xxPCICDevice(PCICV3Client):
         result = self.send_command('o{io_id}{state}'.format(io_id=io_id, state=str(state)))
         result = result.decode()
         return result
-
-    def foo(self, array, pad_width, mode):
-        """
-        Activates the selected application.
-
-        Parameters
-        ----------
-        array : array_like of rank N
-            The array to pad.
-        pad_width : {sequence, array_like, int}
-            Number of values padded to the edges of each axis.
-            ((before_1, after_1), ... (before_N, after_N)) unique pad widths
-            for each axis.
-            ((before, after),) yields same before and after pad for each axis.
-            (pad,) or int is a shortcut for before = after = pad width for all
-            axes.
-        mode : str or function, optional
-            One of the following string values or a user supplied function.
-
-            'constant' (default)
-                Pads with a constant value.
-            'edge'
-                Pads with the edge values of array.
-            'linear_ramp'
-                Pads with the linear ramp between end_value and the
-                array edge value.
-            'maximum'
-                Pads with the maximum value of all or part of the
-                vector along each axis.
-            'mean'
-                Pads with the mean value of all or part of the
-                vector along each axis.
-            'median'
-                Pads with the median value of all or part of the
-                vector along each axis.
-            'minimum'
-                Pads with the minimum value of all or part of the
-                vector along each axis.
-            'reflect'
-                Pads with the reflection of the vector mirrored on
-                the first and last values of the vector along each
-                axis.
-            'symmetric'
-                Pads with the reflection of the vector mirrored
-                along the edge of the array.
-            'wrap'
-                Pads with the wrap of the vector along the axis.
-                The first values are used to pad the end and the
-                end values are used to pad the beginning.
-            'empty'
-                Pads with undefined values.
-
-                .. versionadded:: 1.17
-
-            <function>
-                Padding function, see Notes.
-
-        Returns
-        -------
-        pad : ndarray
-            Padded array of rank equal to `array` with shape increased
-            according to `pad_width`.
-        """
-        pad = 2
-        return pad
 
     def request_state_of_an_id(self, io_id):
         """
