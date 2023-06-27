@@ -46,3 +46,8 @@ images_config = {
     },
     "layouter": "flexible"
 }
+
+ready_for_trigger_config = {"elements": [{"id": "custom_string", "type": "string", "value": "ReadyForTrigger"},
+                                         {"id": "delimiter", "type": "string", "value": ";"},
+                                         {"id": "custom_string", "type": "string", "value": "True"}],
+                            "format": {"dataencoding": "ascii"}, "layouter": "flexible"}
