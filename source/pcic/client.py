@@ -1,4 +1,4 @@
-from source.static.formats import error_codes, serialization_format
+from ..static.formats import error_codes, serialization_format
 import matplotlib.image as mpimg
 import binascii
 import socket
