@@ -24,8 +24,8 @@ A Python 3 library for ifm efector O2x5xx 2D sensors (O2D5xx / O2I5xx).
 
 # Contact
 
-In case of any issues or if you want to report a bug please [contact our](mailto:support.sy@ifm.com) support team
-or create an issue in the Github repository.
+In case of any issues or if you want to report a bug please [contact our](mailto:support.efector.object-ident@ifm.com)
+support team or create an issue in the Github repository.
 
 # Prerequisites
 
@@ -38,7 +38,7 @@ Usage of examples requires packages listed in the requirements.txt file. Install
 ### Dependent Packages (Offline)
 
 In an industrial production it is normally not possible to install packages from an online package manager. 
-Therefore you can first download the packages on your personal machine with i-net access with following command
+Thereforem you can first download the packages on your personal machine with i-net access with following command
 
     $ pip wheel -r requirements.txt -w ./packages
 
@@ -284,7 +284,7 @@ must be called to make others available:
 # Unit Tests
 
 For testing the source code you have to enter the IP address and TCP/IP port number in the *tests\config.py* file. 
-Afterwards you can simply run all tests with following commands:
+Afterward, you can simply run all tests with following commands:
 
     $ python .\test_pcic.py
 
