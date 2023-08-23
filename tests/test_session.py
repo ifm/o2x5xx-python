@@ -3,6 +3,7 @@ from source import O2x5xxRPCDevice
 from tests.utils import *
 from .config import *
 import os
+import warnings
 
 
 class TestRPC_SessionObject(TestCase):
@@ -35,6 +36,9 @@ class TestRPC_SessionObject(TestCase):
         tearDownSession.cancelSession()
 
     def setUp(self):
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*<ssl.SSLSocket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed <socket.socket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed running multiprocessing pool.*>")
         self.rpc = O2x5xxRPCDevice(deviceAddress)
         self.rpc.switchApplication(1)
         self.session = self.rpc.requestSession()

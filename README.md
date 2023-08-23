@@ -284,16 +284,16 @@ must be called to make others available:
 # Unit Tests
 
 For testing the source code you have to enter the IP address and TCP/IP port number in the *tests\config.py* file. 
-Afterward, you can simply run all tests with following commands:
+Afterward, you can simply run all tests with following commands from project root:
 
-    $ python .\test_pcic.py
+    $  python -m unittest discover -vvv
 
 You can run the tests for the PCIC and RPC modules separately with following commands:
     
-    $ python .\test_pcic.py
-    $ python .\test_rpc.py
-    $ python .\test_session.py
-    $ python .\test_edit.py
-    $ python .\test_application.py
-    $ python .\test_imager.py
-    $ python .\test_imageQualityCheck.py
+    $ python -m unittest tests/test_pcic.py -vvv
+    $ python -m unittest tests/test_rpc.py -vvv
+    $ python -m unittest tests/test_session.py -vvv
+    $ python -m unittest tests/test_edit.py -vvv
+    $ python -m unittest tests/test_application.py -vvv
+    $ python -m unittest tests/test_imager.py -vvv
+    $ python -m unittest tests/test_imageQualityCheck.py -vvv

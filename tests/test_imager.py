@@ -2,6 +2,7 @@ from unittest import TestCase
 from source import O2x5xxRPCDevice
 from tests.utils import *
 from .config import *
+import warnings
 
 
 class TestRPC_ImagerObject(TestCase):
@@ -34,6 +35,9 @@ class TestRPC_ImagerObject(TestCase):
         tearDownSession.cancelSession()
 
     def setUp(self):
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*<ssl.SSLSocket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed <socket.socket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed running multiprocessing pool.*>")
         self.rpc = O2x5xxRPCDevice(deviceAddress)
         self.rpc.switchApplication(1)
         self.session = self.rpc.requestSession()
@@ -180,3 +184,43 @@ class TestRPC_ImagerObject(TestCase):
         self.assertEqual(self.image001.FilterInvert, False)
         self.image001.FilterInvert = True
         self.assertEqual(self.image001.FilterInvert, True)
+
+    def test_startCalculateExposureTime(self):
+        self.image001.startCalculateExposureTime()
+        self.assertEqual(self.image001.getProgressCalculateExposureTime(), 1.0)
+
+    def test_startCalculateExposureTimeWithArguments(self):
+        exposureROIsZone = [{"id": 0, "group": 0, "type": "Rect", "width": 100,
+                             "height": 50, "angle": 45, "center_x": 123, "center_y": 42},
+                            {"id": 0, "group": 0, "type": "Ellipse", "width": 50,
+                             "height": 100, "angle": 45, "center_x": 42, "center_y": 123},
+                            {"id": 0, "group": 0, "type": "Poly", "points": [
+                                {"x": 100, "y": 100}, {"x": 234, "y": 100}, {"x": 150, "y": 300}]}]
+        exposureRODsZone = [{"id": 0, "group": 0, "type": "Rect", "width": 30,
+                             "height": 40, "angle": 45, "center_x": 123, "center_y": 42},
+                            {"id": 0, "group": 0, "type": "Ellipse", "width": 20,
+                             "height": 100, "angle": 90, "center_x": 42, "center_y": 153},
+                            {"id": 0, "group": 0, "type": "Poly", "points": [
+                                {"x": 100, "y": 100}, {"x": 334, "y": 300}, {"x": 250, "y": 400}]}]
+        self.image001.startCalculateExposureTime(minAnalogGainFactor=2,
+                                                 maxAnalogGainFactor=8,
+                                                 saturatedRatio=[0.25],
+                                                 ROIs=exposureROIsZone,
+                                                 RODs=exposureRODsZone)
+        self.assertEqual(self.image001.getProgressCalculateExposureTime(), 1.0)
+
+    def test_startCalculateAutofocus(self):
+        self.image001.startCalculateAutofocus()
+        self.assertEqual(self.image001.getProgressCalculateAutofocus(), 1.0)
+
+    def test_getAutofocusDistances(self):
+        self.image001.startCalculateAutofocus()
+        self.assertEqual(self.image001.getProgressCalculateAutofocus(), 1.0)
+        result = self.image001.getAutofocusDistances()
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], float)
+
+    def test_getAutoExposureResult(self):
+        self.image001.startCalculateExposureTime()
+        result = self.image001.getAutoExposureResult()
+        self.assertIsInstance(result, dict)

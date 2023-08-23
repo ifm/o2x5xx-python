@@ -2,7 +2,7 @@ from unittest import TestCase
 from source import O2x5xxRPCDevice
 from tests.utils import *
 from .config import *
-import xmlrpc.client
+import warnings
 
 
 class TestRPC_ApplicationObject(TestCase):
@@ -35,6 +35,9 @@ class TestRPC_ApplicationObject(TestCase):
         tearDownSession.cancelSession()
 
     def setUp(self):
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*<ssl.SSLSocket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed <socket.socket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed running multiprocessing pool.*>")
         self.rpc = O2x5xxRPCDevice(deviceAddress)
         self.rpc.switchApplication(1)
         self.session = self.rpc.requestSession()
@@ -121,10 +124,20 @@ class TestRPC_ApplicationObject(TestCase):
         self.assertEqual(self.application.HWROI, {"x": 0, "y": 0, "width": 1280, "height": 960})
         self.application.HWROI = {"x": 100, "y": 100, "width": 640, "height": 640}
         self.assertEqual(self.application.HWROI, {"x": 100, "y": 100, "width": 640, "height": 640})
-        with self.assertRaises(xmlrpc.client.Error):
-            self.application.HWROI = {"x": 100, "y": 100, "width": 1280, "height": 960}
-        with self.assertRaises(xmlrpc.client.Error):
-            self.application.HWROI = {"x": 100, "y": 100, "width": 1, "height": 1}
+        self.application.HWROI = {"x": 100, "y": 100, "width": 640, "height": 128}
+        self.assertEqual(self.application.HWROI, {"x": 100, "y": 100, "width": 640, "height": 128})
+        # Check width < 640 but multiple of 16
+        with self.assertRaises(ValueError):
+            self.application.HWROI = {"x": 100, "y": 100, "width": 624, "height": 128}
+        # Check height < 128 but multiple of 16
+        with self.assertRaises(ValueError):
+            self.application.HWROI = {"x": 100, "y": 100, "width": 640, "height": 112}
+        # Check width > 640 but not multiple of 16
+        with self.assertRaises(ValueError):
+            self.application.HWROI = {"x": 100, "y": 100, "width": 641, "height": 128}
+        # Check height > 128 but not multiple of 16
+        with self.assertRaises(ValueError):
+            self.application.HWROI = {"x": 100, "y": 100, "width": 640, "height": 129}
         self.assertFalse(self.application.validate())
 
     def test_Rotate180Degree(self):

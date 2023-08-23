@@ -1,8 +1,16 @@
 from unittest import TestCase
-from source import O2x5xxRPCDevice
-from tests.utils import *
-from .config import *
+try:
+    from source import O2x5xxRPCDevice
+    from tests.utils import *
+    from .config import *
+except ModuleNotFoundError:
+    import os
+    import sys
+    sys.path.insert(0, '../source')
+    from utils import *
+    from config import *
 import numpy as np
+import warnings
 import time
 
 
@@ -32,6 +40,9 @@ class TestRPC_MainAPI(TestCase):
         cls.session.cancelSession()
 
     def setUp(self):
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*<ssl.SSLSocket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed <socket.socket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed running multiprocessing pool.*>")
         self.rpc.switchApplication(1)
 
     def test_getParameter(self):

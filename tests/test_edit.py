@@ -2,6 +2,7 @@ from unittest import TestCase
 from source import O2x5xxRPCDevice
 from tests.utils import *
 from .config import *
+import warnings
 
 
 class TestRPC_EditObject(TestCase):
@@ -34,6 +35,9 @@ class TestRPC_EditObject(TestCase):
         tearDownSession.cancelSession()
 
     def setUp(self):
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*<ssl.SSLSocket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed <socket.socket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed running multiprocessing pool.*>")
         self.rpc = O2x5xxRPCDevice(deviceAddress)
         self.rpc.switchApplication(1)
         self.session = self.rpc.requestSession()

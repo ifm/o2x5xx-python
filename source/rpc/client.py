@@ -190,10 +190,11 @@ class O2x5xxRPCDevice(object):
         """
         Executes trigger.
 
-        :return: (str) process interface output
+        :return: (str) process interface output (TCP/IP)
         """
         pcicDevice = O2x5xxPCICDevice(address=self.address, port=self.tcpIpPort)
         while self.getParameter("OperatingMode") != "0":
+            Warning("Sensor is not in Run Mode. Please finish parametrization first.")
             time.sleep(0.1)
         self.rpc.trigger()
         # This is required since there is no lock for application evaluation process within the trigger()-method.

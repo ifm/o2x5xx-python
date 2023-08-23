@@ -185,11 +185,52 @@ class Application(object):
         """
         Defines the area of the imager which is used for capturing images.
         Must be a JSON with the properties x, y, width, height, representing a valid rect inside 1280 x 960.
-        "width" must be at least 640 (because of image-header/-footer) and a multiple of 16 (hw-JPEG-encoding).
+        "width" must be at least 640 (because of image-header/-footer) and a multiple of 16 (hw-JPEG-encoding)
+        and "height" must be at least 128 (because of image-header/-footer) and a multiple of 16 (hw-JPEG-encoding).
 
         :param value: (dict) properties x, y, width, height
+                      e.g.: {"x": 300, "y": 400, "width": 640, "height": 400}
         :return: None
         """
+        valueErrorList = []
+
+        def getValueErrorListNumber():
+            return str(valueErrorList.__len__() + 1)
+
+        # Checking if height is in valid image range
+        if value["y"] + value["height"] > 960:
+            valueErrorList.append("\n{idx}. Y coordinate {y} with a height {value} is out if a valid range of 960!"
+                                  .format(idx=getValueErrorListNumber(), y=value["y"], value=value["height"]))
+        # Checking if height is min. 128 pixel
+        if value["height"] < 128:
+            valueErrorList.append("\n{idx}. Height {value} must be at least 128!"
+                                  .format(idx=getValueErrorListNumber(), value=value["height"]))
+        # Check if height is multiple of 16
+        if value["height"] % 16 != 0:
+            height_remainder = value["height"] % 16
+            height_lower = value["height"] - height_remainder
+            height_upper = value["height"] + 16 - height_remainder
+            valueErrorList.append("\n{idx}. Height {value} is not a multiple of 16! Did you mean {lower} or {upper}?"
+                                  .format(idx=getValueErrorListNumber(), value=value["height"],
+                                          lower=height_lower, upper=height_upper))
+        # Checking if width is in valid image range
+        if value["x"] + value["width"] > 1280:
+            valueErrorList.append("\n{idx}. X coordinate {x} with a width {value} is out if a valid range of 1280!"
+                                  .format(idx=getValueErrorListNumber(), x=value["x"], value=value["width"]))
+        # Check if width is min. 640 pxl
+        if value["width"] < 640:
+            valueErrorList.append("\n{idx}. Width {value} must be at least 640!"
+                                  .format(idx=getValueErrorListNumber(), value=value["width"]))
+        # Check if width is multiple of 16
+        if value["width"] % 16 != 0:
+            width_remainder = value["width"] % 16
+            width_lower = value["width"] - width_remainder
+            width_upper = value["width"] + 16 - width_remainder
+            valueErrorList.append("\n{idx}. Width {value} is not a multiple of 16! Did you mean {lower} or {upper}?"
+                                  .format(idx=getValueErrorListNumber(), value=value["width"],
+                                          lower=width_lower, upper=width_upper))
+        if valueErrorList:
+            raise ValueError("".join(valueErrorList))
         self.rpc.setParameter("HWROI", json.dumps(value))
         self.waitForConfigurationDone()
 

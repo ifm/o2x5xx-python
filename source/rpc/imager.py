@@ -343,13 +343,30 @@ class Imager(object):
         self.rpc.setParameter("FilterInvert", value)
         self.applicationAPI.waitForConfigurationDone()
 
-    def startCalculateExposureTime(self) -> None:
+    def startCalculateExposureTime(self, minAnalogGainFactor: int = None, maxAnalogGainFactor: int = None,
+                                   saturatedRatio: [float, list] = None, ROIs: list = None, RODs: list = None) -> None:
         """
-        Starting "auto exposuretime" with ROI-definition.
+        Starting calculation "auto exposure time" with analog gain factor, saturation ratio and ROI/ROD-definition.
 
+        :param minAnalogGainFactor: Min. Analog Gain Factor upper limit. Possible values: 1, 2, 4 or 8
+        :param maxAnalogGainFactor: Max. Analog Gain Factor upper limit. Possible values: 1, 2, 4 or 8
+        :param saturatedRatio: (float/array) maximum acceptable ratio of saturated pixels
+        :param ROIs: Auto-Exposure is calculated on these set of ROIs
+        :param RODs: RODs are subtracted from the ROI union set
         :return: None
         """
-        self.rpc.startCalculateExposureTime()
+        inputAutoExposure = {}
+        if minAnalogGainFactor:
+            inputAutoExposure.update({"minAnalogGainFactor": minAnalogGainFactor})
+        if maxAnalogGainFactor:
+            inputAutoExposure.update({"maxAnalogGainFactor": maxAnalogGainFactor})
+        if saturatedRatio:
+            inputAutoExposure.update({"saturatedRatio": saturatedRatio})
+        if ROIs:
+            inputAutoExposure.update({"ROIs": ROIs})
+        if RODs:
+            inputAutoExposure.update({"RODs": RODs})
+        self.rpc.startCalculateExposureTime(json.dumps(inputAutoExposure))
         while self.getProgressCalculateExposureTime() < 1.0:
             time.sleep(1)
 
@@ -366,6 +383,7 @@ class Imager(object):
     def startCalculateAutofocus(self) -> None:
         """
         Starting "autofocus" calculation with ROI-definition.
+        The autofocus will be optimized for the center of the image (HWROI).
 
         :return: None
         """
@@ -399,17 +417,23 @@ class Imager(object):
         """
         Request a list of focus positions of the previous reference run.
 
-        :return: (str) a list of floating point values, separated by comma
+        :return: a list of floating point values, separated by comma
         """
         result = self.rpc.getAutofocusDistances()
-        return result
+        if result:
+            if "," not in result:
+                return [float(result)]
+            tmp = result.split(",")
+            result = [float(v) for v in tmp]
+            return result
 
-    def getAutoExposureResult(self) -> dict:
+    def getAutoExposureResult(self) -> [dict, None]:
         """
         Request a result of auto exposure algo run.
 
         :return: (dict) json with algo run result as a string
         """
         result = self.rpc.getAutoExposureResult()
-        data = json.load(result)
-        return data
+        if result:
+            data = json.loads(result)
+            return data

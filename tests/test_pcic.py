@@ -5,6 +5,7 @@ from tests.utils import *
 from .config import *
 import time
 import ast
+import warnings
 
 
 class TestPCIC(TestCase):
@@ -35,6 +36,9 @@ class TestPCIC(TestCase):
         cls.session.cancelSession()
 
     def setUp(self):
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*<ssl.SSLSocket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed <socket.socket.*>")
+        warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed running multiprocessing pool.*>")
         result = self.pcic.activate_application(1)
         self.assertEqual(result, "*")
 
