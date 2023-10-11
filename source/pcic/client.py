@@ -9,10 +9,9 @@ import io
 import o2x5xx
 
 class Client(object):
-    def __init__(self, address, port, timeout_insec = 3):
+    def __init__(self, address, port):
         # open raw socket
         self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.pcicSocket.settimeout(timeout_insec)
         self.pcicSocket.connect((address, port))
         self.recv_counter = 0
         self.debug = False
@@ -65,8 +64,6 @@ class PCICV3Client(Client):
         answer_length = int(re.findall(r'\d+', str(answer))[1])
         answer = self.recv(answer_length)
         return ticket, answer[4:-2]
-        
-                
 
     def read_answer(self, ticket):
         """
