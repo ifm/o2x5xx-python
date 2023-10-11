@@ -14,7 +14,7 @@ class O2x5xxRPCDevice(object):
     Main API class
     """
 
-    def __init__(self, address="192.168.0.69", api_path="/api/rpc/v1/"):
+    def __init__(self, address="192.168.1.69", api_path="/api/rpc/v1/"):
         self.baseURL = "http://" + address + api_path
         self.mainURL = self.baseURL + "com.ifm.efector/"
         self.session = None

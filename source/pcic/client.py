@@ -6,17 +6,19 @@ import struct
 import json
 import re
 import io
-
+import o2x5xx
 
 class Client(object):
-    def __init__(self, address, port):
+    def __init__(self, address, port, timeout_insec = 3):
         # open raw socket
         self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.pcicSocket.settimeout(timeout_insec)
         self.pcicSocket.connect((address, port))
         self.recv_counter = 0
         self.debug = False
         self.debugFull = False
-
+        self.rpcdevice = o2x5xx.O2x5xxRPCDevice()
+        
     def __del__(self):
         self.close()
 
@@ -27,15 +29,20 @@ class Client(object):
         :param number_bytes: (int) length of bytes
         :return: the data as bytearray
         """
-        data = bytearray()
-        while len(data) < number_bytes:
-            data_part = self.pcicSocket.recv(number_bytes - len(data))
-            if len(data_part) == 0:
-                raise RuntimeError("Connection to server closed")
-            data = data + data_part
-        self.recv_counter += number_bytes
-        return data
+        sessionstatus = self.rpcdevice.getParameter("OperatingMode")
+        if sessionstatus == "0":
+            data = bytearray()
+            while len(data) < number_bytes:
+                data_part = self.pcicSocket.recv(number_bytes - len(data))
+                if len(data_part) == 0:
+                    raise RuntimeError("Connection to server closed")
+                data = data + data_part
+            self.recv_counter += number_bytes
+            return data
 
+        else:
+            raise RuntimeError("Session is already open!")
+        
     def close(self):
         """
         Close the socket session with the device.
@@ -58,6 +65,8 @@ class PCICV3Client(Client):
         answer_length = int(re.findall(r'\d+', str(answer))[1])
         answer = self.recv(answer_length)
         return ticket, answer[4:-2]
+        
+                
 
     def read_answer(self, ticket):
         """
