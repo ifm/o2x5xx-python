@@ -6,6 +6,11 @@ try:
 except ImportError:
     pass
 
+def read_requires():
+    with open("requirements.txt", "r") as r:
+        requires = r.readlines()
+    return [r.strip() for r in requires]
+
 setup(
     name='o2x5xx',
     version='0.2',
@@ -18,11 +23,5 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose'],
     zip_safe=False,
-    install_requires=[
-        "numpy==1.26.0",
-        "Pillow==10.0.1",
-        "matplotlib==3.8.0",
-        "setuptools==68.2.2",
-        "pyodbc==4.0.34"
-      ]
+    install_requires=read_requires()
     )
