@@ -1,12 +1,11 @@
 from ..static.formats import error_codes, serialization_format
+from o2x5xx import json, re, io
 import matplotlib.image as mpimg
 import binascii
 import socket
 import struct
-import json
-import re
-import io
 import o2x5xx
+
 
 class Client(object):
     def __init__(self, address, port):
