@@ -38,8 +38,11 @@ class Client(object):
             self.recv_counter += number_bytes
             return data
 
+        elif sessionstatus == 1:
+            raise RuntimeError("Sensor is in Parametrization Mode. Please close the ifmVisionAssistant and retry.")
+        
         else:
-            raise RuntimeError("Session is already open!")
+            raise RuntimeError("Sensor is booting at the moment. Please wait.")
         
     def close(self):
         """
