@@ -38,7 +38,7 @@ class Client(object):
             self.recv_counter += number_bytes
             return data
 
-        elif sessionstatus == 1:
+        elif sessionstatus == "1":
             raise RuntimeError("Sensor is in Parametrization Mode. Please close the ifmVisionAssistant and retry.")
         
         else:
