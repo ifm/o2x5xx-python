@@ -10,13 +10,21 @@ import o2x5xx
 class Client(object):
     def __init__(self, address, port):
         # open raw socket
-        self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.pcicSocket.connect((address, port))
-        self.recv_counter = 0
-        self.debug = False
-        self.debugFull = False
-        self.rpcdevice = o2x5xx.O2x5xxRPCDevice()
+        sessionstatus = self.rpcdevice.getParameter("OperatingMode")
+        if sessionstatus == "0":
+            self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.pcicSocket.connect((address, port))
+            self.recv_counter = 0
+            self.debug = False
+            self.debugFull = False
+            self.rpcdevice = o2x5xx.O2x5xxRPCDevice()
+
+        elif sessionstatus == "1":
+            raise RuntimeError("Sensor is in Parametrization Mode. Please close the ifmVisionAssistant and retry.")
         
+        else:
+            raise RuntimeError("Sensor is in simulation mode at the moment.")
+
     def __del__(self):
         self.close()
 
@@ -27,22 +35,14 @@ class Client(object):
         :param number_bytes: (int) length of bytes
         :return: the data as bytearray
         """
-        sessionstatus = self.rpcdevice.getParameter("OperatingMode")
-        if sessionstatus == "0":
-            data = bytearray()
-            while len(data) < number_bytes:
-                data_part = self.pcicSocket.recv(number_bytes - len(data))
-                if len(data_part) == 0:
-                    raise RuntimeError("Connection to server closed")
-                data = data + data_part
-            self.recv_counter += number_bytes
-            return data
-
-        elif sessionstatus == "1":
-            raise RuntimeError("Sensor is in Parametrization Mode. Please close the ifmVisionAssistant and retry.")
-        
-        else:
-            raise RuntimeError("Sensor is booting at the moment. Please wait.")
+        data = bytearray()
+        while len(data) < number_bytes:
+            data_part = self.pcicSocket.recv(number_bytes - len(data))
+            if len(data_part) == 0:
+                raise RuntimeError("Connection to server closed")
+            data = data + data_part
+        self.recv_counter += number_bytes
+        return data
         
     def close(self):
         """
