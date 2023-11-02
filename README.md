@@ -67,10 +67,14 @@ If you want to record the asynchronous PCIC output endless and save the output i
 
     $ python output_recorder.py 192.168.0.69 myFile.txt -1
 
-For vizualizing the image(s) data coming from the camera (requires matplotlib) use following example. 
-Each image will be show in an own window:
+For visualizing the image(s) data coming from the camera (requires matplotlib) use following example. 
+Each image will be shown in an own window:
 
     $ python image_viewer.py 192.168.0.69
+
+To detect all sensors in the available network environments, please run the following example:
+
+    $ python device_discovery.py
 
 # Usage
 
