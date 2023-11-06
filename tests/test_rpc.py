@@ -1,14 +1,7 @@
 from unittest import TestCase
-try:
-    from source import O2x5xxRPCDevice
-    from tests.utils import *
-    from .config import *
-except ModuleNotFoundError:
-    import os
-    import sys
-    sys.path.insert(0, '../source')
-    from utils import *
-    from config import *
+from source import O2x5xxRPCDevice
+from tests.utils import *
+from .config import *
 import numpy as np
 import warnings
 import time
@@ -23,21 +16,22 @@ class TestRPC_MainAPI(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.rpc = O2x5xxRPCDevice(deviceAddress)
-        cls.session = cls.rpc.requestSession()
-        cls.config_backup = cls.session.exportConfig()
-        cls.active_application_backup = cls.rpc.getParameter("ActiveApplication")
-        configFile = getImportSetupByPinLayout(rpc=cls.rpc)['config_file']
-        configFile = cls.session.readConfigFile(configFile=configFile)
-        cls.session.importConfig(configFile, global_settings=True, network_settings=False, applications=True)
-        cls.rpc.switchApplication(1)
+        with O2x5xxRPCDevice(deviceAddress) as cls.rpc:
+            cls.session = cls.rpc.requestSession()
+            cls.config_backup = cls.session.exportConfig()
+            cls.active_application_backup = cls.rpc.getParameter("ActiveApplication")
+            configFile = getImportSetupByPinLayout(rpc=cls.rpc)['config_file']
+            configFile = cls.session.readConfigFile(configFile=configFile)
+            cls.session.importConfig(configFile, global_settings=True, network_settings=False, applications=True)
+            cls.rpc.switchApplication(1)
 
     @classmethod
     def tearDownClass(cls):
-        cls.session.importConfig(cls.config_backup, global_settings=True, network_settings=False, applications=True)
-        if cls.active_application_backup != "0":
-            cls.rpc.switchApplication(cls.active_application_backup)
-        cls.session.cancelSession()
+        with O2x5xxRPCDevice(deviceAddress) as cls.rpc:
+            cls.session = cls.rpc.requestSession()
+            cls.session.importConfig(cls.config_backup, global_settings=True, network_settings=False, applications=True)
+            if cls.active_application_backup != "0":
+                cls.rpc.switchApplication(cls.active_application_backup)
 
     def setUp(self):
         warnings.filterwarnings("ignore", category=ResourceWarning, message="unclosed.*<ssl.SSLSocket.*>")

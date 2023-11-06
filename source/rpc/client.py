@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.image as mpimg
 from .session import Session
 from .utils import timeout
+from .utils import rpc_exception_handler
 from ..device.client import O2x5xxPCICDevice
 
 
@@ -14,16 +15,45 @@ class O2x5xxRPCDevice(object):
     Main API class
     """
 
-    def __init__(self, address="192.168.0.69", api_path="/api/rpc/v1/"):
-        self.baseURL = "http://" + address + api_path
+    def __init__(self, address="192.168.0.69", api_path="/api/rpc/v1/", autoconnect=True):
+        self.address = address
+        self.api_path = api_path
+        self.autoconnect = autoconnect
+        self.baseURL = "http://" + self.address + self.api_path
         self.mainURL = self.baseURL + "com.ifm.efector/"
+        self.rpc = None
+        self.connected = False
+        if self.autoconnect:
+            self.connect()
+            self.connected = True
         self.session = None
+
+    def __enter__(self):
+        self.rpc = xmlrpc.client.ServerProxy(self.mainURL)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__del__()
+
+    def __del__(self):
+        if self.session:
+            self.session.cancelSession()
+
+    @rpc_exception_handler(max_timeout=5)
+    def connect(self):
+        """
+        Establish an XML-RPC connection to device with given ip address.
+
+        :return: None
+        """
         try:
             self.rpc = xmlrpc.client.ServerProxy(self.mainURL)
-            self.address = address
-            self.tcpIpPort = int(self.getParameter("PcicTcpPort"))
-        except Exception as e:
-            print(e)
+            # self.tcpIpPort = int(self.getParameter("PcicTcpPort"))
+        except WindowsError as e:
+            if e.winerror == 10061:
+                print(e)
+                raise ConnectionError("Unable to establish an XML-RPC connection to device with address {}"
+                                      .format(self.address))
 
     def getParameter(self, value: str) -> str:
         """
@@ -192,7 +222,8 @@ class O2x5xxRPCDevice(object):
 
         :return: (str) process interface output (TCP/IP)
         """
-        pcicDevice = O2x5xxPCICDevice(address=self.address, port=self.tcpIpPort)
+        tcpIpPort = int(self.getParameter("PcicTcpPort"))
+        pcicDevice = O2x5xxPCICDevice(address=self.address, port=tcpIpPort)
         while self.getParameter("OperatingMode") != "0":
             Warning("Sensor is not in Run Mode. Please finish parametrization first.")
             time.sleep(0.1)

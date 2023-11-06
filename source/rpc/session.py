@@ -28,8 +28,17 @@ class Session(object):
         else:
             self.rpc.heartbeat(300)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__del__()
+
     def __del__(self):
-        self.cancelSession()
+        if self._edit:
+            self.stopEdit()
+        if self.connected:
+            self.cancelSession()
 
     @property
     def OperatingMode(self):

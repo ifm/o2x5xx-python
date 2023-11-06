@@ -1,4 +1,5 @@
 from ..static.formats import error_codes, serialization_format
+from .utils import socket_exception_handler
 import matplotlib.image as mpimg
 import binascii
 import socket
@@ -9,16 +10,42 @@ import io
 
 
 class Client(object):
-    def __init__(self, address, port):
-        # open raw socket
-        self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.pcicSocket.connect((address, port))
+
+    def __init__(self, address, port, autoconnect=True):
+        self.address = address
+        self.port = port
+        self.autoconnect = autoconnect
+        self.pcicSocket = None
+        self.connected = False
+        if self.autoconnect:
+            self.connect()
+            self.connected = True
         self.recv_counter = 0
         self.debug = False
         self.debugFull = False
 
+    def __enter__(self):
+        if not self.connected and self.autoconnect:
+            self.connect()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.pcicSocket:
+            self.close()
+
     def __del__(self):
-        self.close()
+        if self.pcicSocket:
+            self.close()
+
+    @socket_exception_handler(max_timeout=5)
+    def connect(self):
+        # open raw socket
+        self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.pcicSocket.connect((self.address, self.port))
+
+    def disconnect(self):
+        if self.pcicSocket:
+            self.close()
 
     def recv(self, number_bytes):
         """
@@ -46,6 +73,7 @@ class Client(object):
 
 
 class PCICV3Client(Client):
+
     def read_next_answer(self):
         """
         Read next available answer.
@@ -92,11 +120,6 @@ class PCICV3Client(Client):
 
 
 class O2x5xxPCICDevice(PCICV3Client):
-    def __init__(self, address, port):
-        self.address = address
-        self.port = port
-
-        super(O2x5xxPCICDevice, self).__init__(address, port)
 
     def activate_application(self, application_number: [str, int]) -> str:
         """
@@ -290,7 +313,7 @@ class O2x5xxPCICDevice(PCICV3Client):
         result = result.decode()
         return result
 
-    def request_last_image_taken(self, image_id):
+    def request_last_image_taken(self, image_id=1):
         """
         Request last image taken.
 
@@ -436,26 +459,26 @@ class O2x5xxPCICDevice(PCICV3Client):
         result = result.decode()
         return result
 
-    def set_logic_state_of_an_id2(self, io_id, state):
-        """
-        This is a reST style.
-
-        :param io_id : (int)
-        2 digits for digital output
-            * "01": IO1
-            * "02": IO2
-        :param state : (str)
-        this is a second param
-            * "01": IO1
-            * "02": IO2
-        :returns: this is a description of what is returned
-        :raises keyError: raises an exception
-        """
-        if str(io_id).isnumeric():
-            io_id = str(io_id).zfill(2)
-        result = self.send_command('o{io_id}{state}'.format(io_id=io_id, state=str(state)))
-        result = result.decode()
-        return result
+    # def set_logic_state_of_an_id2(self, io_id, state):
+    #     """
+    #     This is a reST style.
+    #
+    #     :param io_id : (int)
+    #     2 digits for digital output
+    #         * "01": IO1
+    #         * "02": IO2
+    #     :param state : (str)
+    #     this is a second param
+    #         * "01": IO1
+    #         * "02": IO2
+    #     :returns: this is a description of what is returned
+    #     :raises keyError: raises an exception
+    #     """
+    #     if str(io_id).isnumeric():
+    #         io_id = str(io_id).zfill(2)
+    #     result = self.send_command('o{io_id}{state}'.format(io_id=io_id, state=str(state)))
+    #     result = result.decode()
+    #     return result
 
     def request_state_of_an_id(self, io_id):
         """
@@ -526,7 +549,7 @@ class O2x5xxPCICDevice(PCICV3Client):
 
     def execute_asynchronous_trigger(self):
         """
-        Executes trigger. The result data is send asynchronously.
+        Executes trigger. The result data is sent asynchronously.
         Only compatible with configured trigger "Process Interface" on the sensor.
 
         :return: - * Trigger was executed, the device captures an image and evaluates the result. 
@@ -541,7 +564,7 @@ class O2x5xxPCICDevice(PCICV3Client):
 
     def execute_synchronous_trigger(self):
         """
-        Executes trigger. The result data is send synchronously.
+        Executes trigger. The result data is sent synchronously.
         Only compatible with configured trigger "Process Interface" on the sensor.
 
         :return: - (str) decoded data output of process interface  

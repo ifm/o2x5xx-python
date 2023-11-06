@@ -297,3 +297,4 @@ You can run the tests for the PCIC and RPC modules separately with following com
     $ python -m unittest tests/test_application.py -vvv
     $ python -m unittest tests/test_imager.py -vvv
     $ python -m unittest tests/test_imageQualityCheck.py -vvv
+    $ python -m unittest tests/test_device.py -vvv
