@@ -3,7 +3,6 @@ try:
 except ModuleNotFoundError:
     from source.rpc.client import O2x5xxRPCDevice
 import sys
-from source.rpc.client import O2x5xxRPCDevice
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
