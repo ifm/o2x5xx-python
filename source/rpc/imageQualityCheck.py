@@ -10,10 +10,15 @@ class ImageQualityCheck(object):
     ImageQualityCheck object
     """
 
-    def __init__(self, imageURL, imageRPC, applicationAPI):
-        self._imageURL = imageURL
-        self._imageRPC = imageRPC
-        self._applicationAPI = applicationAPI
+    def __init__(self, imagerProxy, device):
+        self._imagerProxy = imagerProxy
+        self._device = device
+
+    # def __enter__(self):
+    #     return self
+    #
+    # def __exit__(self, exc_type, exc_val, exc_tb):
+    #     pass
 
     @property
     def enabled(self) -> bool:
@@ -22,7 +27,7 @@ class ImageQualityCheck(object):
 
         :return: (bool) True / False
         """
-        if self._imageRPC.getAllParameters()["QualityCheckConfig"]:
+        if self._imagerProxy.getAllParameters()["QualityCheckConfig"]:
             return True
         return False
 
@@ -35,10 +40,10 @@ class ImageQualityCheck(object):
         :return: None
         """
         if value:
-            self._imageRPC.setParameter("QualityCheckConfig", True)
+            self._imagerProxy.setParameter("QualityCheckConfig", True)
         else:
-            self._imageRPC.setParameter("QualityCheckConfig", "")
-        while self._applicationAPI.isConfigurationDone() < 1.0:
+            self._imagerProxy.setParameter("QualityCheckConfig", "")
+        while self._device.isConfigurationDone() < 1.0:
             time.sleep(1)
 
     @property
@@ -50,7 +55,7 @@ class ImageQualityCheck(object):
         """
         if not self.enabled:
             return None
-        result = self._imageRPC.getAllParameters()["QualityCheckConfig"]
+        result = self._imagerProxy.getAllParameters()["QualityCheckConfig"]
         result = ast.literal_eval(result)
         return result
 
@@ -64,7 +69,7 @@ class ImageQualityCheck(object):
         """
         if not self.enabled:
             self.enabled = True
-        self._imageRPC.setParameter("QualityCheckConfig", json.dumps(inputDict))
+        self._imagerProxy.setParameter("QualityCheckConfig", json.dumps(inputDict))
 
     @property
     def _QualityCheckConfigSchema(self) -> dict:
@@ -73,8 +78,12 @@ class ImageQualityCheck(object):
 
         :return: (dict) schema of Image Quality Check
         """
-        ip = urlparse(self._imageURL).netloc
-        with urlopen("http://{}/schema/ParamImageFeatures.json".format(ip)) as url:
+        # ip = urlparse(self._imagerProxy.baseURL).netloc
+        # with urlopen("http://{}/schema/ParamImageFeatures.json".format(ip)) as url:
+        #     data = json.load(url)
+        #     return data
+
+        with urlopen("http://{}/schema/ParamImageFeatures.json".format(self._device.address)) as url:
             data = json.load(url)
             return data
 
@@ -119,7 +128,7 @@ class ImageQualityCheck(object):
         tmp["threshold_min_sharpness"] = inputDict["min"]
         tmp["threshold_max_sharpness"] = inputDict["max"]
         self._QualityCheckConfig = tmp
-        self._applicationAPI.waitForConfigurationDone()
+        self._device.waitForConfigurationDone()
 
     @property
     def meanBrightness_thresholdMinMax(self) -> [dict, None]:
@@ -162,7 +171,7 @@ class ImageQualityCheck(object):
         tmp["threshold_min_brightness"] = inputDict["min"]
         tmp["threshold_max_brightness"] = inputDict["max"]
         self._QualityCheckConfig = tmp
-        self._applicationAPI.waitForConfigurationDone()
+        self._device.waitForConfigurationDone()
 
     @property
     def underexposedArea_thresholdMinMax(self) -> [dict, None]:
@@ -206,7 +215,7 @@ class ImageQualityCheck(object):
         tmp["threshold_min_area_low_exposure"] = inputDict["min"]
         tmp["threshold_max_area_low_exposure"] = inputDict["max"]
         self._QualityCheckConfig = tmp
-        self._applicationAPI.waitForConfigurationDone()
+        self._device.waitForConfigurationDone()
 
     @property
     def overexposedArea_thresholdMinMax(self) -> [dict, None]:
@@ -250,5 +259,5 @@ class ImageQualityCheck(object):
         tmp["threshold_min_area_high_exposure"] = inputDict["min"]
         tmp["threshold_max_area_high_exposure"] = inputDict["max"]
         self._QualityCheckConfig = tmp
-        while self._applicationAPI.isConfigurationDone() < 1.0:
+        while self._device.isConfigurationDone() < 1.0:
             time.sleep(1)

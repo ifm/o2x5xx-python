@@ -4,9 +4,9 @@ import io
 import time
 import numpy as np
 import matplotlib.image as mpimg
-from .session import Session
+from .proxy import MainProxy, SessionProxy, EditProxy, ApplicationProxy, ImagerProxy
+from .proxy import Session, Edit, Application, Imager
 from .utils import timeout
-from .utils import rpc_exception_handler
 from ..device.client import O2x5xxPCICDevice
 
 
@@ -14,46 +14,61 @@ class O2x5xxRPCDevice(object):
     """
     Main API class
     """
-
-    def __init__(self, address="192.168.0.69", api_path="/api/rpc/v1/", autoconnect=True):
+    def __init__(self, address="192.168.0.69", api_path="/api/rpc/v1/"):
         self.address = address
         self.api_path = api_path
-        self.autoconnect = autoconnect
         self.baseURL = "http://" + self.address + self.api_path
         self.mainURL = self.baseURL + "com.ifm.efector/"
-        self.rpc = None
-        self.connected = False
-        if self.autoconnect:
-            self.connect()
-            self.connected = True
-        self.session = None
+        self.mainProxy = MainProxy(url=self.mainURL, device=self)
+        self.tcpIpPort = int(self.getParameter("PcicTcpPort"))
 
     def __enter__(self):
-        self.rpc = xmlrpc.client.ServerProxy(self.mainURL)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.__del__()
+        self.mainProxy.close()
 
-    def __del__(self):
-        if self.session:
-            self.session.cancelSession()
+    @property
+    def sessionProxy(self) -> SessionProxy:
+        return getattr(self, "_sessionProxy")
 
-    @rpc_exception_handler(max_timeout=5)
-    def connect(self):
-        """
-        Establish an XML-RPC connection to device with given ip address.
-
-        :return: None
-        """
+    @property
+    def editProxy(self) -> [EditProxy, None]:
         try:
-            self.rpc = xmlrpc.client.ServerProxy(self.mainURL)
-            # self.tcpIpPort = int(self.getParameter("PcicTcpPort"))
-        except WindowsError as e:
-            if e.winerror == 10061:
-                print(e)
-                raise ConnectionError("Unable to establish an XML-RPC connection to device with address {}"
-                                      .format(self.address))
+            return getattr(self, "_editProxy")
+        except AttributeError:
+            return None
+
+    @property
+    def applicationProxy(self) -> ApplicationProxy:
+        return getattr(self, "_applicationProxy")
+
+    @property
+    def imagerProxy(self) -> ImagerProxy:
+        return getattr(self, "_imagerProxy")
+
+    @property
+    def session(self) -> Session:
+        if self.sessionProxy:
+            return getattr(self, "_session")
+
+    @property
+    def edit(self) -> Edit:
+        if self.editProxy:
+            return getattr(self, "_edit")
+        else:
+            raise AttributeError("No editProxy available! Please first create an editProxy "
+                                 "with method self.device.session.requestOperatingMode(Mode=1) before using Edit!")
+
+    @property
+    def application(self) -> Application:
+        if self.applicationProxy:
+            return getattr(self, "_application")
+
+    @property
+    def imager(self) -> Imager:
+        if self.imagerProxy:
+            return getattr(self, "_imager")
 
     def getParameter(self, value: str) -> str:
         """
@@ -64,7 +79,7 @@ class O2x5xxRPCDevice(object):
         :return: (str) value of parameter
         """
         try:
-            result = self.rpc.getParameter(value)
+            result = self.mainProxy.getParameter(value)
             return result
         except xmlrpc.client.Fault as e:
             if e.faultCode == 101000:
@@ -78,7 +93,7 @@ class O2x5xxRPCDevice(object):
 
         :return: (dict) name contains parameter-name, value the stringified parameter-value
         """
-        result = self.rpc.getAllParameters()
+        result = self.mainProxy.getAllParameters()
         return result
 
     def getSWVersion(self) -> dict:
@@ -87,7 +102,7 @@ class O2x5xxRPCDevice(object):
 
         :return: (dict) struct of strings
         """
-        result = self.rpc.getSWVersion()
+        result = self.mainProxy.getSWVersion()
         return result
 
     def getHWInfo(self) -> dict:
@@ -96,7 +111,7 @@ class O2x5xxRPCDevice(object):
 
         :return: (dict) struct of strings
         """
-        result = self.rpc.getHWInfo()
+        result = self.mainProxy.getHWInfo()
         return result
 
     def getDmesgData(self) -> str:
@@ -105,7 +120,7 @@ class O2x5xxRPCDevice(object):
 
         :return: (str) List of kernel messages
         """
-        result = self.rpc.getDmesgData()
+        result = self.mainProxy.getDmesgData()
         return result
 
     def getClientCompatibilityList(self) -> list:
@@ -114,7 +129,7 @@ class O2x5xxRPCDevice(object):
 
         :return: (list) Array of strings
         """
-        result = self.rpc.getClientCompatibilityList()
+        result = self.mainProxy.getClientCompatibilityList()
         return result
 
     def getApplicationList(self) -> list:
@@ -123,21 +138,21 @@ class O2x5xxRPCDevice(object):
 
         :return: (dict) array list of structs
         """
-        result = self.rpc.getApplicationList()
+        result = self.mainProxy.getApplicationList()
         return result
 
     def reboot(self, mode: int = 0) -> None:
         """
         Reboot system, parameter defines which mode/system will be booted.
 
-        :param mode: (int) type of system that should be booted after shutdown 
-                      0: productive-mode (default) 
+        :param mode: (int) type of system that should be booted after shutdown
+                      0: productive-mode (default)
                       1: recovery-mode (not implemented)
         :return: None
         """
         if mode == 0:
             print("Rebooting sensor {} ...".format(self.getParameter(value="Name")))
-            self.rpc.reboot(mode)
+            self.mainProxy.reboot(mode)
         else:
             raise ValueError("Reboot mode {} not available.".format(str(mode)))
 
@@ -148,18 +163,18 @@ class O2x5xxRPCDevice(object):
         :param applicationIndex: (int) Index of new application (Range 1-32)
         :return: None
         """
-        self.rpc.switchApplication(applicationIndex)
+        self.mainProxy.switchApplication(applicationIndex)
         self.waitForConfigurationDone()
 
     def getTraceLogs(self, nLogs: int = 0) -> list:
         """
         Returns entries from internal log buffer of device. These can contain informational, error or trace messages.
 
-        :param nLogs: (int) max. number of logs to fetch from IOM 
+        :param nLogs: (int) max. number of logs to fetch from IOM
                             0: all logs are fetched
         :return: (list) Array of strings
         """
-        result = self.rpc.getTraceLogs(nLogs)
+        result = self.mainProxy.getTraceLogs(nLogs)
         return result
 
     def getApplicationStatisticData(self, applicationIndex: int) -> dict:
@@ -171,7 +186,7 @@ class O2x5xxRPCDevice(object):
         :param applicationIndex: (int) Index of application (Range 1-32)
         :return: (dict)
         """
-        result = eval(self.rpc.getApplicationStatisticData(applicationIndex))
+        result = eval(self.mainProxy.getApplicationStatisticData(applicationIndex))
         return result
 
     def getReferenceImage(self) -> np.ndarray:
@@ -181,7 +196,7 @@ class O2x5xxRPCDevice(object):
         :return: (np.ndarray) a JPEG decompressed image
         """
         b = bytearray()
-        b.extend(map(ord, str(self.rpc.getReferenceImage())))
+        b.extend(map(ord, str(self.mainProxy.getReferenceImage())))
         result = mpimg.imread(io.BytesIO(b), format='jpg')
         return result
 
@@ -192,7 +207,7 @@ class O2x5xxRPCDevice(object):
 
         :return: (bool) True or False
         """
-        result = self.rpc.isConfigurationDone()
+        result = self.mainProxy.isConfigurationDone()
         return result
 
     def waitForConfigurationDone(self):
@@ -203,7 +218,7 @@ class O2x5xxRPCDevice(object):
 
         :return: None
         """
-        self.rpc.waitForConfigurationDone()
+        self.mainProxy.waitForConfigurationDone()
 
     def measure(self, measureInput: dict) -> dict:
         """
@@ -213,57 +228,73 @@ class O2x5xxRPCDevice(object):
         :return: (dict) measure result
         """
         input_stringified = json.dumps(measureInput)
-        result = eval(self.rpc.measure(input_stringified))
+        result = eval(self.mainProxy.measure(input_stringified))
         return result
 
     def trigger(self) -> str:
         """
-        Executes trigger.
+        Executes trigger and read answer.
 
         :return: (str) process interface output (TCP/IP)
         """
-        tcpIpPort = int(self.getParameter("PcicTcpPort"))
-        pcicDevice = O2x5xxPCICDevice(address=self.address, port=tcpIpPort)
-        while self.getParameter("OperatingMode") != "0":
-            Warning("Sensor is not in Run Mode. Please finish parametrization first.")
-            time.sleep(0.1)
-        self.rpc.trigger()
-        # This is required since there is no lock for application evaluation process within the trigger()-method.
-        # After an answer is provided by the PCIC interface you can be sure,
-        # that the trigger count was incremented correctly and the evaluation process finished.
-        ticket, answer = pcicDevice.read_next_answer()
-        self.waitForConfigurationDone()
-        pcicDevice.close()
-        return answer.decode()
+        with O2x5xxPCICDevice(address=self.address, port=self.tcpIpPort) as pcicDevice:
+            while self.getParameter("OperatingMode") != "0":
+                Warning("Sensor is not in Run Mode. Please finish parametrization first.")
+                time.sleep(0.1)
+            self.mainProxy.trigger()
+            # This is required since there is no lock for application evaluation process within the trigger()-method.
+            # After an answer is provided by the PCIC interface you can be sure,
+            # that the trigger count was incremented correctly and the evaluation process finished.
+            ticket, answer = pcicDevice.read_next_answer()
+            self.waitForConfigurationDone()
+            pcicDevice.close()
+            return answer.decode()
 
     @timeout(2)
     def doPing(self) -> str:
         """
         Ping sensor device and check reachability in network.
 
-        :return: - "up" sensor is reachable through network 
+        :return: - "up" sensor is reachable through network
                  - "down" sensor is not reachable through network
         """
-        result = self.rpc.doPing()
+        result = self.mainProxy.doPing()
         return result
 
-    def requestSession(self, password="", sessionID="") -> Session:
-        """
-        Request a session-object for access to the configuration and for changing device operating-mode.
-        This should block parallel editing and allows to put editing behind password.
-        The ID could optionally be defined from the external system, but it must be the defined format (32char "hex").
-        If it is called with only one parameter, the device will generate a SessionID.
-
-        :param password: (str) session password (optional)
-        :param sessionID: (str) session ID (optional)
-        :return: Session object
-        """
-        sessionID = self.rpc.requestSession(password, sessionID)
-        sessionURL = self.mainURL + 'session_' + sessionID + '/'
-        self.session = Session(sessionURL=sessionURL, mainAPI=self)
-        return self.session
-
-    def __getattr__(self, name):
-        # Forward otherwise undefined method calls to XMLRPC proxy
-        return getattr(self.rpc, name)
-
+    # @contextmanager
+    # def requestSession(self, password='', session_id='0' * 32):
+    #     """Generator for requestSession to be used in with statement.
+    #
+    #     Args:
+    #         password (str): password for session
+    #         session_id (str): session id
+    #
+    #     Initializes various proxies and calls installAdditionalProxies().
+    #     """
+    #     self._sessionId = self.mainProxy.requestSession(password, session_id)
+    #     self._sessionURL = self.baseURL + 'session_' + session_id + '/'
+    #     self._sessionProxy = SessionProxy(url=self._sessionURL, device=self)
+    #     # self.device._session = Session(sessionProxy=self.device._sessionProxy,
+    #     #                                device=self.device)
+    #
+    #     self._editURL = self._sessionURL + 'edit/'
+    #     self._editProxy = EditProxy(url=self._editURL, device=self)
+    #     # self.device._edit = Edit(editProxy=self.device._editProxy,
+    #     #                          sessionProxy=self.device._sessionProxy,
+    #     #                          device=self.device)
+    #
+    #     # self.device.editDeviceProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/device/')
+    #     # self.device.editNetworkProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/device/network/')
+    #     # self.device.editTimeProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/device/time/')
+    #     # self.device.editApplicationProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/application/')
+    #     # self.device.editAppImagerProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/application/imager_001/')
+    #     # self.device.editIOTestProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/iotest/')
+    #     try:
+    #         yield
+    #     finally:
+    #         if self.device._sessionProxy.autoHeartbeatTimer:
+    #             self.device._sessionProxy.autoHeartbeatTimer.cancel()
+    #         self.device._sessionProxy.cancelSession()
+    #         self.device._sessionProxy = None
+    #         # self.device.sessionProxy, self.device.editProxy, self.device.editDeviceProxy, self.device.editTimeProxy = None, None, None, None
+    #         self.device._sessionURL, self.device._sessionId = None, None

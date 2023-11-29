@@ -1,67 +1,22 @@
-import xmlrpc.client
-from .application import Application
-
-
 class Edit(object):
     """
-    Edit object (singleton object)
+    Edit object
     """
 
-    # https://stackoverflow.com/questions/51896862/how-to-create-singleton-class-with-arguments-in-python
-    __instance = None
+    def __init__(self, editProxy, device):
+        self._editProxy = editProxy
+        self._device = device
 
-    def __new__(cls, *args, **kwargs):
-        # print(cls.__instance)
-        if cls.__instance is None:
-            cls.__instance = super().__new__(cls)
-        return cls.__instance
-
-    def __init__(self, editURL, sessionAPI, mainAPI):
-        self.url = editURL
-        self.sessionAPI = sessionAPI
-        self.mainAPI = mainAPI
-        self.rpc = xmlrpc.client.ServerProxy(self.url)
-        self.applicationURL = self.url + 'application/'
-        self.deviceURL = self.url + 'device/'
-        self.networkURL = self.deviceURL + 'network/'
-        self._device = None
-        self._network = None
-        self._application = None
-        self._editApplicationIndexActive = None
-
-    @property
-    def application(self) -> Application:
-        """
-        Puts a specified Application into edit-status.
-        This will attach an application-object to the RPC interface.
-        The name of the object will be application independent.
-        This does not change the "ActiveApplication"-parameter.
-
-        :return: ApplicationConfig object
-        """
-        self._application = Application(applicationURL=self.applicationURL,
-                                        sessionAPI=self.sessionAPI,
-                                        mainAPI=self.mainAPI)
-        return self._application
-
-    def stopEditingApplication(self) -> None:
-        """
-        Tells the device that editing this application was finished. Unsaved changed should be discarded.
-        HINT: The device must also call this implicit, when an edit-session timed out or was closed by "cancelSession".
-
-        :return: None
-        """
-        self.rpc.stopEditingApplication()
-        self._application = None
-        self._editApplicationIndexActive = None
-
-    def createApplication(self) -> int:
+    def createApplication(self, deviceType="WithModels") -> int:
         """
         Creates an "empty" application.
 
+        :param deviceType: (str) could be "Camera", "WithModels"
         :return: (int) Index of new application
         """
-        appIndex = self.rpc.createApplication()
+        if deviceType not in ["Camera", "WithModels"]:
+            raise AttributeError("Device type must be either value \"Camera\" or \"WithModels\"!")
+        appIndex = self._editProxy.createApplication(deviceType)
         return appIndex
 
     def copyApplication(self, applicationIndex: int) -> int:
@@ -72,7 +27,7 @@ class Edit(object):
         :param applicationIndex: (int) Index of application which should be copied
         :return: (int) Index of new application
         """
-        appIndex = self.rpc.copyApplication(applicationIndex)
+        appIndex = self._editProxy.copyApplication(applicationIndex)
         return appIndex
 
     def deleteApplication(self, applicationIndex: int) -> None:
@@ -83,7 +38,7 @@ class Edit(object):
         :param applicationIndex: (int) application index
         :return: None
         """
-        self.rpc.deleteApplication(applicationIndex)
+        self._editProxy.deleteApplication(applicationIndex)
 
     def changeNameAndDescription(self, applicationIndex: int, name: str = "", description: str = "") -> None:
         """
@@ -100,7 +55,7 @@ class Edit(object):
         max_chars = 500
         if description.__len__() > 500:
             raise ValueError("Max. {} characters for description".format(max_chars))
-        self.rpc.changeNameAndDescription(applicationIndex, name, description)
+        self._editProxy.changeNameAndDescription(applicationIndex, name, description)
 
     def moveApplications(self, applicationIndexFrom: int, applicationIndexTo: int) -> None:
         """
@@ -110,37 +65,10 @@ class Edit(object):
         :param applicationIndexTo: (int) desired application id in application list
         :return: None
         """
-        app_list = self.mainAPI.getApplicationList()
+        app_list = self._device.mainProxy.getApplicationList()
         move_list = []
         for app in app_list:
             if int(app["Index"]) == int(applicationIndexFrom):
                 app["Index"] = int(applicationIndexTo)
             move_list.append({'Id': app['Id'], 'Index': app['Index']})
-        self.rpc.moveApplications(move_list)
-
-    def editApplication(self, applicationIndex: int):
-        """
-        Puts a specified Application into edit-status. This will attach an application-object to the RPC interface.
-        The name of the object will be application independent. This does not change the "ActiveApplication"-parameter.
-
-        :param applicationIndex: (int) Application index
-        :return: ApplicationConfig object
-        """
-        if not self.sessionAPI.OperationMode:
-            self.sessionAPI.setOperationMode(mode=1)
-        if not self._editApplicationIndexActive:
-            if applicationIndex in range(1, 32):  # start edit mode for application
-                self.rpc.editApplication(applicationIndex)
-                self._application = Application(applicationURL=self.applicationURL, sessionAPI=self.sessionAPI,
-                                                mainAPI=self.mainAPI)
-                self._editApplicationIndexActive = applicationIndex
-                return self._application
-            else:
-                raise ValueError("Invalid application index")
-        else:
-            raise PermissionError("Application with index {} is already in Edit-Mode. Please first stop the Edit-Mode"
-                                  "for this application.".format(self._editApplicationIndexActive))
-
-    def __getattr__(self, name):
-        # Forward otherwise undefined method calls to XMLRPC proxy
-        return getattr(self.rpc, name)
+        self._editProxy.moveApplications(move_list)

@@ -8,44 +8,60 @@ import json
 import re
 import io
 
+SOCKET_TIMEOUT = 5
+
 
 class Client(object):
 
-    def __init__(self, address, port, autoconnect=True):
+    def __init__(self, address, port, autoconnect=True, timeout=5):
         self.address = address
         self.port = port
         self.autoconnect = autoconnect
+        self.timeout = timeout
         self.pcicSocket = None
         self.connected = False
         if self.autoconnect:
             self.connect()
-            self.connected = True
         self.recv_counter = 0
         self.debug = False
         self.debugFull = False
 
     def __enter__(self):
-        if not self.connected and self.autoconnect:
-            self.connect()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.pcicSocket:
-            self.close()
+        self.disconnect()
 
-    def __del__(self):
-        if self.pcicSocket:
-            self.close()
-
-    @socket_exception_handler(max_timeout=5)
+    @socket_exception_handler(timeout=SOCKET_TIMEOUT)
     def connect(self):
-        # open raw socket
-        self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.pcicSocket.connect((self.address, self.port))
+        """
+        Open the socket session with the device.
+
+        :return: None
+        """
+        if not self.connected:
+            self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.pcicSocket.connect((self.address, self.port))
+            self.connected = True
 
     def disconnect(self):
-        if self.pcicSocket:
-            self.close()
+        """
+        Close the socket session with the device.
+
+        :return: None
+        """
+        self.close()
+
+    def close(self):
+        """
+        Close the socket session with the device.
+
+        :return: None
+        """
+        if self.connected:
+            self.pcicSocket.close()
+            self.pcicSocket = None
+            self.connected = False
 
     def recv(self, number_bytes):
         """
@@ -62,14 +78,6 @@ class Client(object):
             data = data + data_part
         self.recv_counter += number_bytes
         return data
-
-    def close(self):
-        """
-        Close the socket session with the device.
-
-        :return: None
-        """
-        self.pcicSocket.close()
 
 
 class PCICV3Client(Client):
@@ -497,7 +505,7 @@ class O2x5xxPCICDevice(PCICV3Client):
                  - ! Invalid state (e.g. configuration mode)
                    | Wrong ID
                    | Element PCIC Output not connected to DIGITAL_OUT element in logic layer
-                   (only valid for FW lower 1.30.40100) 
+                   (only valid for FW lower 1.30.10400)
                  - ? Invalid command length
         """
         if str(io_id).isnumeric():
