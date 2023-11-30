@@ -26,47 +26,49 @@ if __name__ == '__main__':
         file_name = sys.argv[2]
         duration_in_seconds = int(sys.argv[3])
     except IndexError:
-        raise ValueError("Argument(s) are missing. Here is an example for recoding for one hour: "
+        raise ValueError("Argument(s) are missing. Here is an example for recording for one hour: "
                          "python output_recorder.py 192.168.0.69 myFile.txt 3600")
 
     # create device
-    device = O2x5xxDevice(address, 50010)
+    with O2x5xxDevice(address=address, port=50010) as device:
 
-    # create a text file where to store the data from process interface
-    if not os.path.exists(os.path.dirname(file_name)):
-        try:
-            os.makedirs(os.path.dirname(file_name))
-        except OSError:
-            print("Creation of the directory %s failed" % file_name)
-        else:
-            print("Successfully created the directory %s " % file_name)
+        # create a text file where to store the data from process interface
+        file_path = os.path.dirname(file_name)
+        if not os.path.exists(os.path.dirname(file_name)) and (file_path != ''):
+            try:
+                os.makedirs(os.path.dirname(file_name))
+            except OSError:
+                print("Creation of the directory %s failed" % file_name)
+                sys.exit(-1)
+            else:
+                print("Successfully created the directory %s " % file_name)
 
-        text_file = open(file_name, "w+")
-        text_file.close()
+            text_file = open(file_name, "w+")
+            text_file.close()
 
-    start_time = time.time()
+        start_time = time.time()
 
-    print("\n--- Starting recording PCIC output ---\n")
+        print("\n--- Starting recording PCIC output ---\n")
 
-    while True:
-        if not end_of_runtime(start_time, duration_in_seconds):
+        while True:
+            if not end_of_runtime(start_time, duration_in_seconds):
 
-            # Trigger sensor synchronous
-            ticket, answer = device.read_next_answer()
+                # Trigger sensor synchronous
+                ticket, answer = device.read_next_answer()
 
-            if ticket == b"0000":
-                # Add a line index and a timestamp at the start of the line
-                answer = str(COUNTER) + ";" + answer.decode() + ";" + str(datetime.now())
-                print(answer)
+                if ticket == b"0000":
+                    # Add a line index and a timestamp at the start of the line
+                    answer = str(COUNTER) + ";" + answer.decode() + ";" + str(datetime.now())
+                    print(answer)
 
-                # Write answer to file
-                with open(file_name, 'a') as out_file:
-                    out_file.write(answer + "\n")
+                    # Write answer to file
+                    with open(file_name, 'a') as out_file:
+                        out_file.write(answer + "\n")
 
-                # Increment line counter
-                COUNTER += 1
-        else:
-            out_file.close()
-            print("\n--- End recording ---")
-            print("\n---Runtime: %s seconds ---" % (time.time() - start_time))
-            sys.exit(-1)
+                    # Increment line counter
+                    COUNTER += 1
+            else:
+                out_file.close()
+                print("\n--- End recording ---")
+                print("\n---Runtime: %s seconds ---" % (time.time() - start_time))
+                sys.exit(-1)

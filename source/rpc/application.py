@@ -1,6 +1,4 @@
-import xmlrpc.client
 import json
-from .imager import Imager
 
 
 class Application(object):
@@ -8,13 +6,10 @@ class Application(object):
     Application object
     """
 
-    def __init__(self, applicationURL, sessionAPI, mainAPI):
-        self.url = applicationURL
-        self.sessionAPI = sessionAPI
-        self.mainAPI = mainAPI
-        self.rpc = xmlrpc.client.ServerProxy(self.url)
-        self.imagerConfigURL = self.url + 'imager_{0:03d}/'
-
+    def __init__(self, applicationProxy, device):
+        self._applicationProxy = applicationProxy
+        self._device = device
+    
     def getAllParameters(self):
         """
         Returns all parameters of the object in one data-structure. For an overview which parameters can be request use
@@ -22,7 +17,7 @@ class Application(object):
 
         :return: (dict) name contains parameter-name, value the stringified parameter-value
         """
-        result = self.rpc.getAllParameters()
+        result = self._applicationProxy.getAllParameters()
         return result
 
     def getParameter(self, value):
@@ -32,7 +27,7 @@ class Application(object):
         :param value: (str) parameter name
         :return: (str)
         """
-        result = self.rpc.getParameter(value)
+        result = self._applicationProxy.getParameter(value)
         return result
 
     def getAllParameterLimits(self) -> dict:
@@ -43,7 +38,7 @@ class Application(object):
 
         :return: (dict)
         """
-        result = self.rpc.getAllParameterLimits()
+        result = self._applicationProxy.getAllParameterLimits()
         return result
 
     @property
@@ -77,7 +72,7 @@ class Application(object):
         max_chars = 64
         if value.__len__() > max_chars:
             raise ValueError("Max. {} characters".format(max_chars))
-        self.rpc.setParameter("Name", value)
+        self._applicationProxy.setParameter("Name", value)
         self.waitForConfigurationDone()
 
     @property
@@ -101,7 +96,7 @@ class Application(object):
         max_chars = 500
         if value.__len__() > 500:
             raise ValueError("Max. {} characters".format(max_chars))
-        self.rpc.setParameter("Description", value)
+        self._applicationProxy.setParameter("Description", value)
         self.waitForConfigurationDone()
 
     @property
@@ -142,7 +137,7 @@ class Application(object):
         if value not in range(int(limits["min"]), int(limits["max"]), 1):
             raise ValueError("RPC Trigger value not available. Available range: {}\n"
                              "For more help take a look on the docstring documentation.".format(limits))
-        self.rpc.setParameter("TriggerMode", value)
+        self._applicationProxy.setParameter("TriggerMode", value)
         self.waitForConfigurationDone()
 
     @property
@@ -167,7 +162,7 @@ class Application(object):
         if not float(limits["min"]) <= float(value) <= float(limits["max"]):
             raise ValueError("FrameRate value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["FrameRate"]))
-        self.rpc.setParameter("FrameRate", value)
+        self._applicationProxy.setParameter("FrameRate", value)
         self.waitForConfigurationDone()
 
     @property
@@ -231,7 +226,7 @@ class Application(object):
                                           lower=width_lower, upper=width_upper))
         if valueErrorList:
             raise ValueError("".join(valueErrorList))
-        self.rpc.setParameter("HWROI", json.dumps(value))
+        self._applicationProxy.setParameter("HWROI", json.dumps(value))
         self.waitForConfigurationDone()
 
     @property
@@ -241,7 +236,7 @@ class Application(object):
 
         :return: (bool) True / False
         """
-        result = self.rpc.getParameter("Rotate180Degree")
+        result = self._applicationProxy.getParameter("Rotate180Degree")
         if result == "false":
             return False
         return True
@@ -254,17 +249,19 @@ class Application(object):
         :param value: (bool) True / False
         :return: None
         """
-        self.rpc.setParameter("Rotate180Degree", value)
+        self._applicationProxy.setParameter("Rotate180Degree", value)
         self.waitForConfigurationDone()
 
     @property
     def FocusDistance(self) -> float:
-        result = float(self.rpc.getParameter("FocusDistance"))
+        # TODO: Docstring fehlt
+        result = float(self._applicationProxy.getParameter("FocusDistance"))
         return result
 
     @FocusDistance.setter
     def FocusDistance(self, value: float) -> None:
         """
+        # TODO Wrong!
         Allows to rotate the image by 180° (mirror horizontal+vertical).
 
         :param value: (float) focus distance in meter
@@ -274,7 +271,8 @@ class Application(object):
         if not float(limits["min"]) <= float(value) <= float(limits["max"]):
             raise ValueError("FocusDistance value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["FocusDistance"]))
-        self.rpc.setParameter("FocusDistance", value)
+        self._applicationProxy.setParameter("FocusDistance", value)
+        # TODO: Wird hier geblockt?
         self.waitForConfigurationDone()
 
     @property
@@ -285,7 +283,7 @@ class Application(object):
 
         :return: (str)
         """
-        result = self.rpc.getParameter("ImageEvaluationOrder")
+        result = self._applicationProxy.getParameter("ImageEvaluationOrder")
         return result
 
     @ImageEvaluationOrder.setter
@@ -297,7 +295,7 @@ class Application(object):
         :param value: (list) a whitespace separated list of ImagerConfig ids
         :return: None
         """
-        self.rpc.setParameter("ImageEvaluationOrder", value)
+        self._applicationProxy.setParameter("ImageEvaluationOrder", value)
         self.waitForConfigurationDone()
 
     def save(self) -> None:
@@ -306,7 +304,7 @@ class Application(object):
 
         :return: None
         """
-        self.rpc.save()
+        self._applicationProxy.save()
         self.waitForConfigurationDone()
 
     def validate(self) -> list:
@@ -315,7 +313,7 @@ class Application(object):
 
         :return: Array of fault-structs (Id: int, Text: string)
         """
-        result = self.rpc.validate()
+        result = self._applicationProxy.validate()
         return result
 
     def getImagerConfigList(self) -> list:
@@ -324,7 +322,7 @@ class Application(object):
 
         :return: (list) Array of strings
         """
-        result = self.rpc.getImagerConfigList()
+        result = self._applicationProxy.getImagerConfigList()
         return result
 
     def availableImagerConfigTypes(self) -> list:
@@ -333,7 +331,7 @@ class Application(object):
 
         :return: (list) Array of strings
         """
-        result = self.rpc.availableImagerConfigTypes()
+        result = self._applicationProxy.availableImagerConfigTypes()
         return result
 
     def createImagerConfig(self, imagerType='normal', addToEval=True):
@@ -345,7 +343,7 @@ class Application(object):
                                  not be activated for the image acquisition/evaluation run
         :return: (int) ID of new image-config
         """
-        imagerIndex = self.rpc.createImagerConfig(imagerType)
+        imagerIndex = self._applicationProxy.createImagerConfig(imagerType)
         if addToEval:
             imageEvalOrder = self.ImageEvaluationOrder
             imageEvalOrder += "{} ".format(imagerIndex)
@@ -360,7 +358,7 @@ class Application(object):
         :param imagerIndex: (int) ID of other Imager config
         :return: (int) ID of new image-config
         """
-        imagerIndex = self.rpc.copyImagerConfig(imagerIndex)
+        imagerIndex = self._applicationProxy.copyImagerConfig(imagerIndex)
         self.waitForConfigurationDone()
         return imagerIndex
 
@@ -372,7 +370,7 @@ class Application(object):
         :param imagerIndex: (int) ID of image-config that should be removed
         :return: None
         """
-        self.rpc.deleteImagerConfig(imagerIndex)
+        self._applicationProxy.deleteImagerConfig(imagerIndex)
         self.waitForConfigurationDone()
 
     def isConfigurationDone(self) -> bool:
@@ -382,7 +380,7 @@ class Application(object):
 
         :return: (bool) True or False
         """
-        result = self.rpc.isConfigurationDone()
+        result = self._applicationProxy.isConfigurationDone()
         return result
 
     def waitForConfigurationDone(self):
@@ -393,23 +391,4 @@ class Application(object):
 
         :return: None
         """
-        self.rpc.waitForConfigurationDone()
-
-    def editImage(self, imageIndex: int):
-        """
-        Requests an Imager object specified by the image index.
-        
-        :param imageIndex: (int) index of image from ImagerConfigList
-        :return: Imager (object)
-        """
-        imageIDs = [int(x["Id"]) for x in self.getImagerConfigList()]
-        if imageIndex not in imageIDs:
-            raise ValueError("Image index {} not available. Choose one imageIndex from following"
-                             "ImagerConfigList or create a new one with method createImagerConfig():\n{}"
-                             .format(imageIndex, self.getImagerConfigList()))
-        return Imager(self.imagerConfigURL.format(imageIndex), mainAPI=self.mainAPI,
-                      sessionAPI=self.sessionAPI, applicationAPI=self.rpc)
-
-    def __getattr__(self, name):
-        # Forward otherwise undefined method calls to XMLRPC proxy
-        return getattr(self.rpc, name)
+        self._applicationProxy.waitForConfigurationDone()

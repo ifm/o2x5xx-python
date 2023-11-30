@@ -1,7 +1,6 @@
 import time
-import xmlrpc.client
-from .imageQualityCheck import ImageQualityCheck
 import json
+from .imageQualityCheck import ImageQualityCheck
 
 
 class Imager(object):
@@ -9,13 +8,21 @@ class Imager(object):
     Imager object
     """
 
-    def __init__(self, imageURL, mainAPI, sessionAPI, applicationAPI):
-        self.imageURL = imageURL
-        self.sessionAPI = sessionAPI
-        self.applicationAPI = applicationAPI
-        self.mainAPI = mainAPI
-        self.rpc = xmlrpc.client.ServerProxy(self.imageURL)
+    def __init__(self, imagerProxy, device):
+        self._imagerProxy = imagerProxy
+        self._device = device
         self._imageQualityCheck = None
+
+    @property
+    def imageQualityCheck(self) -> ImageQualityCheck:
+        """
+        Request an Image Quality Check object for parametrizing the thresholds
+        of the Image Quality check KPIs (key performance indicator).
+
+        :return: ImageQualityCheck object
+        """
+        self._imageQualityCheck = ImageQualityCheck(self._imagerProxy, self._device)
+        return self._imageQualityCheck
 
     def getAllParameters(self):
         """
@@ -24,7 +31,7 @@ class Imager(object):
 
         :return: (dict) name contains parameter-name, value the stringified parameter-value
         """
-        result = self.rpc.getAllParameters()
+        result = self._imagerProxy.getAllParameters()
         return result
 
     def getParameter(self, value):
@@ -34,7 +41,7 @@ class Imager(object):
         :param value: (str) parameter name
         :return: (str)
         """
-        result = self.rpc.getParameter(value)
+        result = self._imagerProxy.getParameter(value)
         return result
 
     def getAllParameterLimits(self):
@@ -45,21 +52,8 @@ class Imager(object):
 
         :return: (dict)
         """
-        result = self.rpc.getAllParameterLimits()
+        result = self._imagerProxy.getAllParameterLimits()
         return result
-
-    @property
-    def ImageQualityCheck(self) -> ImageQualityCheck:
-        """
-        Request an Image Quality Check object for parametrizing the thresholds
-        of the Image Quality check KPIs (key performance indicator).
-
-        :return: ImageQualityCheck object
-        """
-        self._imageQualityCheck = ImageQualityCheck(imageURL=self.imageURL,
-                                                    imageRPC=self.rpc,
-                                                    applicationAPI=self.applicationAPI)
-        return self._imageQualityCheck
 
     @property
     def Type(self) -> str:
@@ -91,8 +85,8 @@ class Imager(object):
         max_chars = 64
         if value.__len__() > max_chars:
             raise ValueError("Max. {} characters".format(max_chars))
-        self.rpc.setParameter("Name", value)
-        self.applicationAPI.waitForConfigurationDone()
+        self._imagerProxy.setParameter("Name", value)
+        self._device.waitForConfigurationDone()
 
     @property
     def Illumination(self) -> int:
@@ -124,8 +118,8 @@ class Imager(object):
         if value not in range(int(limits["min"]), int(limits["max"]), 1):
             raise ValueError("Illumination value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["Illumination"]))
-        self.rpc.setParameter("Illumination", value)
-        self.applicationAPI.waitForConfigurationDone()
+        self._imagerProxy.setParameter("Illumination", value)
+        self._device.waitForConfigurationDone()
 
     @property
     def IlluInternalSegments(self) -> dict:
@@ -165,8 +159,8 @@ class Imager(object):
         value += inputDict["upper-right"] * 0x02
         value += inputDict["lower-left"] * 0x04
         value += inputDict["lower-right"] * 0x08
-        self.rpc.setParameter("IlluInternalSegments", value)
-        self.applicationAPI.waitForConfigurationDone()
+        self._imagerProxy.setParameter("IlluInternalSegments", value)
+        self._device.waitForConfigurationDone()
 
     @property
     def Color(self) -> [int, None]:
@@ -202,11 +196,11 @@ class Imager(object):
             if not int(limits["min"]) <= value <= int(limits["max"]):
                 raise ValueError("Color value not available. Available range: {}"
                                  .format(self.getAllParameterLimits()["Color"]))
-            self.rpc.setParameter("Color", value)
+            self._imagerProxy.setParameter("Color", value)
         else:
-            articleNumber = self.mainAPI.getParameter("ArticleNumber")
+            articleNumber = self._device.getParameter(value="ArticleNumber")
             raise TypeError("Color attribute not available for sensor {}.".format(articleNumber))
-        self.applicationAPI.waitForConfigurationDone()
+        self._device.waitForConfigurationDone()
 
     @property
     def ExposureTime(self) -> int:
@@ -230,8 +224,8 @@ class Imager(object):
         if not int(limits["min"]) <= int(value) <= int(limits["max"]):
             raise ValueError("ExposureTime value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["ExposureTime"]))
-        self.rpc.setParameter("ExposureTime", value)
-        self.applicationAPI.waitForConfigurationDone()
+        self._imagerProxy.setParameter("ExposureTime", value)
+        self._device.waitForConfigurationDone()
 
     @property
     def AnalogGainFactor(self) -> int:
@@ -255,8 +249,8 @@ class Imager(object):
         if str(value) not in limits["values"]:
             raise ValueError("AnalogGainFactor value not available. Available values: {}"
                              .format(self.getAllParameterLimits()["AnalogGainFactor"]))
-        self.rpc.setParameter("AnalogGainFactor", value)
-        self.applicationAPI.waitForConfigurationDone()
+        self._imagerProxy.setParameter("AnalogGainFactor", value)
+        self._device.waitForConfigurationDone()
 
     @property
     def FilterType(self) -> int:
@@ -290,8 +284,8 @@ class Imager(object):
         if not int(limits["min"]) <= int(value) <= int(limits["max"]):
             raise ValueError("FilterType value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["FilterType"]))
-        self.rpc.setParameter("FilterType", value)
-        self.applicationAPI.waitForConfigurationDone()
+        self._imagerProxy.setParameter("FilterType", value)
+        self._device.waitForConfigurationDone()
 
     @property
     def FilterStrength(self) -> int:
@@ -317,8 +311,8 @@ class Imager(object):
         if not int(limits["min"]) <= int(value) <= int(limits["max"]):
             raise ValueError("FilterStrength value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["FilterStrength"]))
-        self.rpc.setParameter("FilterStrength", value)
-        self.applicationAPI.waitForConfigurationDone()
+        self._imagerProxy.setParameter("FilterStrength", value)
+        self._device.waitForConfigurationDone()
 
     @property
     def FilterInvert(self) -> bool:
@@ -327,7 +321,7 @@ class Imager(object):
 
         :return: (bool) True or False
         """
-        result = self.rpc.getParameter("FilterInvert")
+        result = self._imagerProxy.getParameter("FilterInvert")
         if result == "false":
             return False
         return True
@@ -340,8 +334,8 @@ class Imager(object):
         :param value: (bool) True or False
         :return: None
         """
-        self.rpc.setParameter("FilterInvert", value)
-        self.applicationAPI.waitForConfigurationDone()
+        self._imagerProxy.setParameter("FilterInvert", value)
+        self._device.waitForConfigurationDone()
 
     def startCalculateExposureTime(self, minAnalogGainFactor: int = None, maxAnalogGainFactor: int = None,
                                    saturatedRatio: [float, list] = None, ROIs: list = None, RODs: list = None) -> None:
@@ -366,7 +360,7 @@ class Imager(object):
             inputAutoExposure.update({"ROIs": ROIs})
         if RODs:
             inputAutoExposure.update({"RODs": RODs})
-        self.rpc.startCalculateExposureTime(json.dumps(inputAutoExposure))
+        self._imagerProxy.startCalculateExposureTime(json.dumps(inputAutoExposure))
         while self.getProgressCalculateExposureTime() < 1.0:
             time.sleep(1)
 
@@ -377,7 +371,7 @@ class Imager(object):
 
         :return: (float) progress (0.0 to 1.0)
         """
-        result = self.rpc.getProgressCalculateExposureTime()
+        result = self._imagerProxy.getProgressCalculateExposureTime()
         return result
 
     def startCalculateAutofocus(self) -> None:
@@ -388,8 +382,8 @@ class Imager(object):
         :return: None
         """
         # This is required due to the long autofocus progress which may take longer than 10 seconds (default)
-        self.sessionAPI.heartbeat(heartbeatInterval=30)
-        self.rpc.startCalculateAutofocus()
+        # self._device.sessionProxy.heartbeat(heartbeatInterval=300)
+        self._imagerProxy.startCalculateAutofocus()
         while self.getProgressCalculateAutofocus() < 1.0:
             time.sleep(1)
 
@@ -401,7 +395,7 @@ class Imager(object):
 
         :return: None
         """
-        self.rpc.stopCalculateAutofocus()
+        self._imagerProxy.stopCalculateAutofocus()
 
     def getProgressCalculateAutofocus(self) -> float:
         """
@@ -410,7 +404,7 @@ class Imager(object):
 
         :return: (float) progress (0.0 to 1.0)
         """
-        result = self.rpc.getProgressCalculateAutofocus()
+        result = self._imagerProxy.getProgressCalculateAutofocus()
         return result
 
     def getAutofocusDistances(self) -> list:
@@ -419,7 +413,7 @@ class Imager(object):
 
         :return: a list of floating point values, separated by comma
         """
-        result = self.rpc.getAutofocusDistances()
+        result = self._imagerProxy.getAutofocusDistances()
         if result:
             if "," not in result:
                 return [float(result)]
@@ -433,7 +427,7 @@ class Imager(object):
 
         :return: (dict) json with algo run result as a string
         """
-        result = self.rpc.getAutoExposureResult()
+        result = self._imagerProxy.getAutoExposureResult()
         if result:
             data = json.loads(result)
             return data
