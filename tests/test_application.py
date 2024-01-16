@@ -2,6 +2,7 @@ from unittest import TestCase
 from source import O2x5xxRPCDevice
 from tests.utils import *
 from .config import *
+import json
 
 
 class TestRPC_ApplicationObject(TestCase):
@@ -18,7 +19,7 @@ class TestRPC_ApplicationObject(TestCase):
                 cls.active_application_backup = rpc.getParameter("ActiveApplication")
                 cls.config_file = getImportSetupByPinLayout(rpc=rpc)['config_file']
                 cls.app_import_file = getImportSetupByPinLayout(rpc=rpc)['app_import_file']
-                _configFile = rpc.session.readConfigFile(configFile=cls.config_file)
+                _configFile = rpc.session.readDeviceConfigFile(configFile=cls.config_file)
                 rpc.session.importConfig(_configFile, global_settings=True, network_settings=False,
                                          applications=True)
 
@@ -185,6 +186,80 @@ class TestRPC_ApplicationObject(TestCase):
                 newImagerIndex02 = self.rpc.application.createImagerConfig()
                 result = self.rpc.application.ImageEvaluationOrder
                 self.assertEqual(result, "1 {} {} ".format(newImagerIndex01, newImagerIndex02))
+
+    def test_PcicTcpResultSchema(self):
+        with O2x5xxRPCDevice(deviceAddress) as self.rpc, self.rpc.mainProxy.requestSession():
+            with self.rpc.sessionProxy.setOperatingMode(mode=1), self.rpc.editProxy.editApplication(
+                    app_index=self.newApplicationIndex):
+                result = self.rpc.application.PcicTcpResultSchema
+                self.assertIsInstance(result, str)
+                self.assertTrue("star" in result)
+                self.assertTrue("stop" in result)
+
+    def test_LogicGraph(self):
+        with O2x5xxRPCDevice(deviceAddress) as self.rpc, self.rpc.mainProxy.requestSession():
+            with self.rpc.sessionProxy.setOperatingMode(mode=1), self.rpc.editProxy.editApplication(
+                    app_index=self.newApplicationIndex):
+                result = self.rpc.application.LogicGraph
+                self.assertIsInstance(result, str)
+                json_result = json.loads(result)
+                self.assertIsInstance(json_result, dict)
+
+    def test_writeLogicGraphSchemaFile(self):
+        with O2x5xxRPCDevice(deviceAddress) as self.rpc, self.rpc.mainProxy.requestSession():
+            with self.rpc.sessionProxy.setOperatingMode(mode=1), self.rpc.editProxy.editApplication(
+                    app_index=self.newApplicationIndex):
+                schemaFilename = "./DELETE_THIS.o2xlgc"
+                logicGraph = self.rpc.application.LogicGraph
+                self.rpc.application.writeLogicGraphSchemaFile(configName=schemaFilename, data=logicGraph)
+                self.assertTrue(os.path.exists(schemaFilename))
+                os.remove(schemaFilename)
+                self.assertFalse(os.path.exists(schemaFilename))
+                schemaFilename = "./DELETE_THIS"
+                # Check if file already exists
+                self.assertFalse(os.path.exists(schemaFilename))
+                self.rpc.application.writeLogicGraphSchemaFile(configName=schemaFilename, data=logicGraph)
+                self.assertTrue(os.path.exists(schemaFilename + ".o2xlgc"))
+                os.remove(schemaFilename + ".o2xlgc")
+
+    def test_readLogicGraphSchemaFile(self):
+        with O2x5xxRPCDevice(deviceAddress) as self.rpc, self.rpc.mainProxy.requestSession():
+            with self.rpc.sessionProxy.setOperatingMode(mode=1), self.rpc.editProxy.editApplication(
+                    app_index=self.newApplicationIndex):
+                schemaFilename = "./DELETE_THIS.o2xlgc"
+                logicGraph1 = self.rpc.application.LogicGraph
+                self.rpc.application.writeLogicGraphSchemaFile(configName=schemaFilename, data=logicGraph1)
+                logicGraph2 = self.rpc.application.readLogicGraphSchemaFile(schemaFile=schemaFilename)
+                self.assertEqual(logicGraph1, logicGraph2)
+                os.remove(schemaFilename)
+
+    def test_writePcicTcpSchemaFile(self):
+        with O2x5xxRPCDevice(deviceAddress) as self.rpc, self.rpc.mainProxy.requestSession():
+            with self.rpc.sessionProxy.setOperatingMode(mode=1), self.rpc.editProxy.editApplication(
+                    app_index=self.newApplicationIndex):
+                schemaFilename = "./DELETE_THIS.o2xpcic"
+                pcicSchema = self.rpc.application.PcicTcpResultSchema
+                self.rpc.application.writePcicTcpSchemaFile(configName=schemaFilename, data=pcicSchema)
+                self.assertTrue(os.path.exists(schemaFilename))
+                os.remove(schemaFilename)
+                self.assertFalse(os.path.exists(schemaFilename))
+                schemaFilename = "./DELETE_THIS"
+                # Check if file already exists
+                self.assertFalse(os.path.exists(schemaFilename))
+                self.rpc.application.writePcicTcpSchemaFile(configName=schemaFilename, data=pcicSchema)
+                self.assertTrue(os.path.exists(schemaFilename + ".o2xpcic"))
+                os.remove(schemaFilename + ".o2xpcic")
+
+    def test_readPcicTcpSchemaFile(self):
+        with O2x5xxRPCDevice(deviceAddress) as self.rpc, self.rpc.mainProxy.requestSession():
+            with self.rpc.sessionProxy.setOperatingMode(mode=1), self.rpc.editProxy.editApplication(
+                    app_index=self.newApplicationIndex):
+                schemaFilename = "./DELETE_THIS.o2xpcic"
+                pcicSchema1 = self.rpc.application.PcicTcpResultSchema
+                self.rpc.application.writePcicTcpSchemaFile(configName=schemaFilename, data=pcicSchema1)
+                pcicSchema2 = self.rpc.application.readPcicTcpSchemaFile(schemaFile=schemaFilename)
+                self.assertEqual(pcicSchema1, pcicSchema2)
+                os.remove(schemaFilename)
 
     def test_save(self):
         with O2x5xxRPCDevice(deviceAddress) as self.rpc, self.rpc.mainProxy.requestSession():

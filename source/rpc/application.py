@@ -1,4 +1,6 @@
 import json
+import os
+import warnings
 
 
 class Application(object):
@@ -9,7 +11,7 @@ class Application(object):
     def __init__(self, applicationProxy, device):
         self._applicationProxy = applicationProxy
         self._device = device
-    
+
     def getAllParameters(self):
         """
         Returns all parameters of the object in one data-structure. For an overview which parameters can be request use
@@ -254,15 +256,18 @@ class Application(object):
 
     @property
     def FocusDistance(self) -> float:
-        # TODO: Docstring fehlt
+        """
+        Represents current Focus position and allows to directly change to a specific position.
+
+        :return: (float) current focus distance in meter
+        """
         result = float(self._applicationProxy.getParameter("FocusDistance"))
         return result
 
     @FocusDistance.setter
     def FocusDistance(self, value: float) -> None:
         """
-        # TODO Wrong!
-        Allows to rotate the image by 180° (mirror horizontal+vertical).
+        Represents current Focus position and allows to directly change to a specific position.
 
         :param value: (float) focus distance in meter
         :return: None
@@ -272,7 +277,7 @@ class Application(object):
             raise ValueError("FocusDistance value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["FocusDistance"]))
         self._applicationProxy.setParameter("FocusDistance", value)
-        # TODO: Wird hier geblockt?
+        # TODO: Wird hier geblockt? Wird der Focus Distance direkt nach dem setzen angefahren?
         self.waitForConfigurationDone()
 
     @property
@@ -297,6 +302,116 @@ class Application(object):
         """
         self._applicationProxy.setParameter("ImageEvaluationOrder", value)
         self.waitForConfigurationDone()
+
+    @property
+    def PcicTcpResultSchema(self) -> str:
+        """
+        The PCIC TCP/IP Schema defines which result-data will be sent via TCP/IP.
+        :return: (str) pcic tcp/ip schema config
+        """
+        return self._applicationProxy.getParameter("PcicTcpResultSchema")
+
+    @PcicTcpResultSchema.setter
+    def PcicTcpResultSchema(self, schema: str) -> None:
+        """
+        The PCIC TCP/IP Schema defines which result-data will be sent via TCP/IP.
+        :param schema: (str) pcic tcp/ip schema config
+        :return: None
+        """
+        self._applicationProxy.setParameter("PcicTcpResultSchema", schema)
+        validation = self.validate()
+        if validation:
+            warnings.warn(str(validation), UserWarning)
+            warnings.warn("PCIC TCP/IP data output may not work properly!")
+        self.waitForConfigurationDone()
+
+    @property
+    def LogicGraph(self) -> str:
+        """
+        JSON string describing a flow-graph which allows to program the logic between model-results and output-pins.
+        :return: (str) JSON string flow-graph of Logic Layer
+        """
+        return self._applicationProxy.getParameter("LogicGraph")
+
+    @LogicGraph.setter
+    def LogicGraph(self, schema: str) -> None:
+        """
+        JSON string describing a flow-graph which allows to program the logic between model-results and output-pins.
+        :param schema: (str) JSON string flow-graph of Logic Layer
+        :return: None
+        """
+        self._applicationProxy.setParameter("LogicGraph", schema)
+        validation = self.validate()
+        if validation:
+            warnings.warn(str(validation), UserWarning)
+            warnings.warn("Logic Graph process output may not work properly!")
+        self.waitForConfigurationDone()
+
+    def writeLogicGraphSchemaFile(self, configName: str, data: str) -> None:
+        """
+        Write a logic graph (Logic Layer) config file.
+
+        :param configName: (str) schema file path as str
+        :param data: (str) schema data as str
+        :return: None
+        """
+        extension = self._device.deviceMeta.value["LogicGraphConfigExtension"]
+        filename, file_extension = os.path.splitext(configName)
+        if not file_extension == extension:
+            configName = filename + extension
+        with open(configName, "w") as f:
+            f.write(data)
+
+    def readLogicGraphSchemaFile(self, schemaFile: str) -> str:
+        """
+        Read a Logic Graph (Logic Layer) config file.
+
+        :param schemaFile: (str) logic graph schema file path
+        :return: (str) schema config data as a str
+        """
+        extension = self._device.deviceMeta.value["LogicGraphConfigExtension"]
+        if not schemaFile.endswith(extension):
+            raise ValueError("File {} does not fit required extension {}".format(schemaFile, extension))
+        if isinstance(schemaFile, str):
+            if os.path.exists(os.path.dirname(schemaFile)):
+                with open(schemaFile, "r") as f:
+                    schema = f.read()
+                    return schema
+            else:
+                raise FileExistsError("File {} does not exist!".format(schemaFile))
+
+    def writePcicTcpSchemaFile(self, configName: str, data: str) -> None:
+        """
+        Write a PCIC TCP/IP config file.
+
+        :param configName: (str) schema file path as str
+        :param data: (str) schema data as str
+        :return: None
+        """
+        extension = self._device.deviceMeta.value["PCICConfigExtension"]
+        filename, file_extension = os.path.splitext(configName)
+        if not file_extension == extension:
+            configName = filename + extension
+        with open(configName, "w") as f:
+            f.write(data)
+
+    def readPcicTcpSchemaFile(self, schemaFile: str) -> str:
+        """
+        Read a PCIC TCP/IP config file.
+
+        :param schemaFile: (str) pcic tcp schema file path
+        :return: (str) schema config data as a str
+        """
+        extension = self._device.deviceMeta.value["PCICConfigExtension"]
+        if not schemaFile.endswith(extension):
+            raise ValueError("File {} does not fit required extension {}".format(schemaFile, extension))
+        if isinstance(schemaFile, str):
+            if os.path.exists(os.path.dirname(schemaFile)):
+                with open(schemaFile, "r") as f:
+                    schema = f.read()
+                    return schema
+            else:
+                raise FileExistsError("File {} does not exist!".format(schemaFile))
 
     def save(self) -> None:
         """

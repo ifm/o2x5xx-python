@@ -1,0 +1,35 @@
+{
+    "blocks": {
+        "B00003": {
+            "pos": {
+                "x": 630,
+                "y": 192
+            },
+            "properties": {
+                "encoding": 0,
+                "identifier": 0,
+                "output_byte_length": 256
+            },
+            "type": "STRING_OUT"
+        },
+        "B00004": {
+            "pos": {
+                "x": 197,
+                "y": 191
+            },
+            "properties": {
+                "escape_characters": false,
+                "value": "HelloWorld"
+            },
+            "type": "FIXED_STRING"
+        }
+    },
+    "connectors": {
+        "C00000": {
+            "dst": "B00003",
+            "dstEP": 0,
+            "src": "B00004",
+            "srcEP": 0
+        }
+    }
+}

@@ -1,0 +1,116 @@
+{
+    "IOMap": {
+        "OUT1": "PCIC_OUT",
+        "OUT2": "PCIC_OUT",
+        "OUT3": "PCIC_OUT",
+        "OUT4": "PCIC_OUT"
+    },
+    "blocks": {
+        "B00001": {
+            "pos": {
+                "x": 575,
+                "y": 64
+            },
+            "properties": {
+                "pulse_delay": 0,
+                "pulse_duration": 0
+            },
+            "type": "DIGITAL_OUT1"
+        },
+        "B00002": {
+            "pos": {
+                "x": 573,
+                "y": 349
+            },
+            "properties": {
+                "pulse_delay": 0,
+                "pulse_duration": 0
+            },
+            "type": "DIGITAL_OUT3"
+        },
+        "B00003": {
+            "pos": {
+                "x": 576,
+                "y": 204
+            },
+            "properties": {
+                "pulse_delay": 0,
+                "pulse_duration": 0
+            },
+            "type": "DIGITAL_OUT2"
+        },
+        "B00004": {
+            "pos": {
+                "x": 94,
+                "y": 64
+            },
+            "properties": {
+            },
+            "type": "PIN_EVENT_PCIC_O_CMD"
+        },
+        "B00005": {
+            "pos": {
+                "x": 572,
+                "y": 493
+            },
+            "properties": {
+                "pulse_delay": 0,
+                "pulse_duration": 0
+            },
+            "type": "DIGITAL_OUT4"
+        },
+        "B00006": {
+            "pos": {
+                "x": 95,
+                "y": 202
+            },
+            "properties": {
+            },
+            "type": "PIN_EVENT_PCIC_O_CMD"
+        },
+        "B00007": {
+            "pos": {
+                "x": 94,
+                "y": 348
+            },
+            "properties": {
+            },
+            "type": "PIN_EVENT_PCIC_O_CMD"
+        },
+        "B00008": {
+            "pos": {
+                "x": 96,
+                "y": 493
+            },
+            "properties": {
+            },
+            "type": "PIN_EVENT_PCIC_O_CMD"
+        }
+    },
+    "connectors": {
+        "C00000": {
+            "dst": "B00003",
+            "dstEP": 0,
+            "src": "B00006",
+            "srcEP": 0
+        },
+        "C00001": {
+            "dst": "B00002",
+            "dstEP": 0,
+            "src": "B00007",
+            "srcEP": 0
+        },
+        "C00002": {
+            "dst": "B00005",
+            "dstEP": 0,
+            "src": "B00008",
+            "srcEP": 0
+        },
+        "C00003": {
+            "dst": "B00001",
+            "dstEP": 0,
+            "src": "B00004",
+            "srcEP": 0
+        }
+    }
+}

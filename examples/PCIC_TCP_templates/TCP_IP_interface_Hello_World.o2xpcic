@@ -1,0 +1,16 @@
+{
+    "elements": [
+        {
+            "format": {
+                "alignment": "left",
+                "fill": "\u0000"
+            },
+            "id": "StringOut0",
+            "type": "blob"
+        }
+    ],
+    "format": {
+        "dataencoding": "ascii"
+    },
+    "layouter": "flexible"
+}

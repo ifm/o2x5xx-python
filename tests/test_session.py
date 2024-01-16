@@ -18,7 +18,7 @@ class TestRPC_SessionObject(TestCase):
                 cls.active_application_backup = rpc.getParameter("ActiveApplication")
                 cls.config_file = getImportSetupByPinLayout(rpc=rpc)['config_file']
                 cls.app_import_file = getImportSetupByPinLayout(rpc=rpc)['app_import_file']
-                _configFile = rpc.session.readConfigFile(configFile=cls.config_file)
+                _configFile = rpc.session.readDeviceConfigFile(configFile=cls.config_file)
                 rpc.session.importConfig(_configFile, global_settings=True, network_settings=False,
                                          applications=True)
 
@@ -48,7 +48,7 @@ class TestRPC_SessionObject(TestCase):
     def test_importConfig(self):
         with O2x5xxRPCDevice(deviceAddress) as self.rpc:
             with self.rpc.mainProxy.requestSession():
-                config = self.rpc.session.readConfigFile(configFile=self.config_file)
+                config = self.rpc.session.readDeviceConfigFile(configFile=self.config_file)
                 self.rpc.session.importConfig(config, global_settings=True, network_settings=False, applications=True)
                 self.assertTrue(config)
                 self.assertIsInstance(config, str)
@@ -112,32 +112,14 @@ class TestRPC_SessionObject(TestCase):
                 self.assertTrue(os.path.exists(appFilename + ".o2d5xxapp"))
                 os.remove(appFilename + ".o2d5xxapp")
 
-    # def test_writeApplicationConfigFileWithoutExplicitEditMode(self):
-    #     with O2x5xxRPCDevice(deviceAddress) as self.rpc, self.rpc.mainProxy.requestSession():
-    #         appFilename = "./DELETE_THIS.o2d5xxapp"
-    #         # Check if file already exists
-    #         self.assertFalse(os.path.exists(appFilename))
-    #         app = self.rpc.session.exportApplication(applicationIndex=1)
-    #         self.rpc.session.writeApplicationConfigFile(applicationName=appFilename, data=app)
-    #         self.assertTrue(os.path.exists(appFilename))
-    #         os.remove(appFilename)
-    #         self.assertFalse(os.path.exists(appFilename))
-    #         appFilename = "./DELETE_THIS"
-    #         # Check if file already exists
-    #         self.assertFalse(os.path.exists(appFilename))
-    #         app = self.rpc.session.exportApplication(applicationIndex=1)
-    #         self.rpc.session.writeApplicationConfigFile(applicationName=appFilename, data=app)
-    #         self.assertTrue(os.path.exists(appFilename + ".o2d5xxapp"))
-    #         os.remove(appFilename + ".o2d5xxapp")
-
-    def test_writeConfigFile(self):
+    def test_writeDeviceConfigFile(self):
         with O2x5xxRPCDevice(deviceAddress) as self.rpc:
             with self.rpc.mainProxy.requestSession():
                 cfgFilename = "./DELETE_THIS.o2d5xxcfg"
                 # Check if file already exists
                 self.assertFalse(os.path.exists(cfgFilename))
                 cfg = self.rpc.session.exportConfig()
-                self.rpc.session.writeConfigFile(configName=cfgFilename, data=cfg)
+                self.rpc.session.writeDeviceConfigFile(configName=cfgFilename, data=cfg)
                 self.assertTrue(os.path.exists(cfgFilename))
                 os.remove(cfgFilename)
                 self.assertFalse(os.path.exists(cfgFilename))
@@ -145,7 +127,7 @@ class TestRPC_SessionObject(TestCase):
                 # Check if file already exists
                 self.assertFalse(os.path.exists(cfgFilename))
                 cfg = self.rpc.session.exportConfig()
-                self.rpc.session.writeConfigFile(configName=cfgFilename + ".o2d5xxcfg", data=cfg)
+                self.rpc.session.writeDeviceConfigFile(configName=cfgFilename + ".o2d5xxcfg", data=cfg)
                 self.assertTrue(os.path.exists(cfgFilename + ".o2d5xxcfg"))
                 os.remove(cfgFilename + ".o2d5xxcfg")
 
@@ -163,9 +145,9 @@ class TestRPC_SessionObject(TestCase):
                     self.rpc.edit.deleteApplication(applicationIndex=newAppIndex)
                 os.remove(appFilename)
 
-    def test_readConfigFile(self):
+    def test_readDeviceConfigFile(self):
         with O2x5xxRPCDevice(deviceAddress) as self.rpc:
             with self.rpc.mainProxy.requestSession():
-                cfg = self.rpc.session.exportConfig()
+                cfg = self.rpc.session.readDeviceConfigFile(configFile=self.config_file)
                 self.assertTrue(cfg)
-                self.assertIsInstance(cfg, bytearray)
+                self.assertIsInstance(cfg, str)
