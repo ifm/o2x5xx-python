@@ -7,7 +7,8 @@ import matplotlib.image as mpimg
 from .proxy import MainProxy, SessionProxy, EditProxy, ApplicationProxy, ImagerProxy
 from .proxy import Session, Edit, Application, Imager
 from .utils import timeout
-from ..device.client import O2x5xxPCICDevice
+from source.device.client import O2x5xxPCICDevice
+from source.static.devices import DevicesMeta
 
 
 class O2x5xxRPCDevice(object):
@@ -21,6 +22,7 @@ class O2x5xxRPCDevice(object):
         self.mainURL = self.baseURL + "com.ifm.efector/"
         self.mainProxy = MainProxy(url=self.mainURL, device=self)
         self.tcpIpPort = int(self.getParameter("PcicTcpPort"))
+        self.deviceMeta = self._getDeviceMeta()
 
     def __enter__(self):
         return self
@@ -69,6 +71,15 @@ class O2x5xxRPCDevice(object):
     def imager(self) -> Imager:
         if self.imagerProxy:
             return getattr(self, "_imager")
+
+    def _getDeviceMeta(self):
+        _deviceType = self.getParameter(value="DeviceType")
+        result = DevicesMeta.getData(key="DeviceType", value=_deviceType)
+        if not result:
+            _articleNumber = self.getParameter(value="ArticleNumber")
+            raise TypeError("Device {} with DeviceType {} is not supported by this library!"
+                            .format(_articleNumber, _deviceType))
+        return result
 
     def getParameter(self, value: str) -> str:
         """
@@ -260,41 +271,3 @@ class O2x5xxRPCDevice(object):
         """
         result = self.mainProxy.doPing()
         return result
-
-    # @contextmanager
-    # def requestSession(self, password='', session_id='0' * 32):
-    #     """Generator for requestSession to be used in with statement.
-    #
-    #     Args:
-    #         password (str): password for session
-    #         session_id (str): session id
-    #
-    #     Initializes various proxies and calls installAdditionalProxies().
-    #     """
-    #     self._sessionId = self.mainProxy.requestSession(password, session_id)
-    #     self._sessionURL = self.baseURL + 'session_' + session_id + '/'
-    #     self._sessionProxy = SessionProxy(url=self._sessionURL, device=self)
-    #     # self.device._session = Session(sessionProxy=self.device._sessionProxy,
-    #     #                                device=self.device)
-    #
-    #     self._editURL = self._sessionURL + 'edit/'
-    #     self._editProxy = EditProxy(url=self._editURL, device=self)
-    #     # self.device._edit = Edit(editProxy=self.device._editProxy,
-    #     #                          sessionProxy=self.device._sessionProxy,
-    #     #                          device=self.device)
-    #
-    #     # self.device.editDeviceProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/device/')
-    #     # self.device.editNetworkProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/device/network/')
-    #     # self.device.editTimeProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/device/time/')
-    #     # self.device.editApplicationProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/application/')
-    #     # self.device.editAppImagerProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/application/imager_001/')
-    #     # self.device.editIOTestProxy = xmlrpc.client.ServerProxy(self.device._sessionURL + 'edit/iotest/')
-    #     try:
-    #         yield
-    #     finally:
-    #         if self.device._sessionProxy.autoHeartbeatTimer:
-    #             self.device._sessionProxy.autoHeartbeatTimer.cancel()
-    #         self.device._sessionProxy.cancelSession()
-    #         self.device._sessionProxy = None
-    #         # self.device.sessionProxy, self.device.editProxy, self.device.editDeviceProxy, self.device.editTimeProxy = None, None, None, None
-    #         self.device._sessionURL, self.device._sessionId = None, None
