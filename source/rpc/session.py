@@ -37,7 +37,7 @@ class Session(object):
         Import whole configuration, with the option to skip specific parts.
 
         :param config:              (str) The config file (*.o2d5xxcfg) as a Binary/base64 data
-        :param global_settings:     (bool) Include Globale-Configuration (Name, Description, Location, ...)
+        :param global_settings:     (bool) Include Global-Configuration (Name, Description, Location, ...)
         :param network_settings:    (bool) Include Network-Configuration (IP, DHCP, ...)
         :param applications:        (bool) Include All Application-Configurations
         :return:                    None
@@ -71,23 +71,6 @@ class Session(object):
             self.cleanupExport()
         return application_bytes
 
-        # def _exportApplication():
-        #     _config = self._sessionProxy.exportApplication(applicationIndex)
-        #     _application_bytes = bytearray()
-        #     _application_bytes.extend(map(ord, str(_config)))
-        #     while self.getExportProgress() < 1.0:
-        #         time.sleep(1)
-        #     else:
-        #         self.cleanupExport()
-        #     return _application_bytes
-        #
-        # if not self._device.editProxy:
-        #     with self._device.sessionProxy.setOperatingMode(mode=1):
-        #         application_bytes = _exportApplication()
-        # else:
-        #     application_bytes = _exportApplication()
-        # return application_bytes
-
     def importApplication(self, application: str) -> int:
         """
         Imports an application-config and creates a new application with it.
@@ -100,21 +83,6 @@ class Session(object):
         while self.getImportProgress() < 1.0:
             time.sleep(1)
         return index
-
-        # def _importApplication():
-        #     _index = int(self._sessionProxy.importApplication(application))
-        #     while self.getImportProgress() < 1.0:
-        #         time.sleep(1)
-        #     return _index
-        #
-        # # if not int(self._device.getParameter(value="OperatingMode")) == 1:
-        # if not self._device.editProxy:
-        #     with self._device.sessionProxy.setOperatingMode(mode=1):
-        #         index = _importApplication()
-        # else:
-        #     index = _importApplication()
-        # self._device.waitForConfigurationDone()
-        # return index
 
     def getImportProgress(self) -> float:
         """
@@ -175,8 +143,7 @@ class Session(object):
         self._sessionProxy.resetStatistics()
         self._device.waitForConfigurationDone()
 
-    @staticmethod
-    def writeApplicationConfigFile(applicationName: str, data: bytearray) -> None:
+    def writeApplicationConfigFile(self, applicationName: str, data: bytearray) -> None:
         """
         Stores the application data as an o2d5xxapp-file in the desired path.
 
@@ -184,15 +151,14 @@ class Session(object):
         :param data: (bytearray) application data
         :return: None
         """
-        extension = ".o2d5xxapp"
+        extension = self._device.deviceMeta.value["ApplicationConfigExtension"]
         filename, file_extension = os.path.splitext(applicationName)
         if not file_extension == extension:
             applicationName = filename + extension
         with open(applicationName, "wb") as f:
             f.write(data)
 
-    @staticmethod
-    def writeConfigFile(configName: str, data: bytearray) -> None:
+    def writeDeviceConfigFile(self, configName: str, data: bytearray) -> None:
         """
         Stores the config data as an o2d5xxcfg-file in the desired path.
 
@@ -200,7 +166,7 @@ class Session(object):
         :param data: (bytearray) application data
         :return: None
         """
-        extension = ".o2d5xxcfg"
+        extension = self._device.deviceMeta.value["DeviceConfigExtension"]
         filename, file_extension = os.path.splitext(configName)
         if not file_extension == extension:
             configName = filename + extension
@@ -214,13 +180,23 @@ class Session(object):
         :param applicationFile: (str) application config file path
         :return: (str) application data
         """
-        result = self.readConfigFile(configFile=applicationFile)
+        result = self._readConfigFile(configFile=applicationFile)
+        return result
+
+    def readDeviceConfigFile(self, configFile: str) -> str:
+        """
+        Read and decode an device-config file.
+
+        :param configFile: (str) device config file path
+        :return: (str) application data
+        """
+        result = self._readConfigFile(configFile=configFile)
         return result
 
     @firmwareWarning
-    def readConfigFile(self, configFile: str) -> str:
+    def _readConfigFile(self, configFile: str) -> str:
         """
-        Read and decode a device-config file.
+        Read and decode a device- or application-config file.
 
         :param configFile: (str) config file path
         :return: (str) config data
