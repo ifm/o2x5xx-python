@@ -26,11 +26,11 @@ class Client(object):
         self.debug = False
         self.debugFull = False
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.disconnect()
+    # def __enter__(self):
+    #     return self
+    #
+    # def __exit__(self, exc_type, exc_val, exc_tb):
+    #     self.disconnect()
 
     @socket_exception_handler(timeout=SOCKET_TIMEOUT)
     def connect(self):
@@ -128,6 +128,12 @@ class PCICV3Client(Client):
 
 
 class O2x5xxPCICDevice(PCICV3Client):
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.disconnect()
 
     def activate_application(self, application_number: [str, int]) -> str:
         """
@@ -458,7 +464,7 @@ class O2x5xxPCICDevice(PCICV3Client):
                  "1": logic state high 
                  - ! Invalid state (e.g. configuration mode)
                    | Wrong ID
-                   | Element PCIC Output not connected to DIGITAL_OUT element in logic layer 
+                   | Element PCIC O-command not connected to DIGITAL_OUT element in logic layer
                  - ? Invalid command length
         """
         if str(io_id).isnumeric():
