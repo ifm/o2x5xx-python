@@ -26,12 +26,6 @@ class Client(object):
         self.debug = False
         self.debugFull = False
 
-    # def __enter__(self):
-    #     return self
-    #
-    # def __exit__(self, exc_type, exc_val, exc_tb):
-    #     self.disconnect()
-
     @socket_exception_handler(timeout=SOCKET_TIMEOUT)
     def connect(self):
         """
