@@ -16,12 +16,29 @@ class DevicesMeta(enum.Enum):
                                 "O2D540", "O2D542", "O2D544",
                                 "O2D550", "O2D552", "O2D554"],
               "DeviceType": ["1:320", 0x140],
-              "ApplicationExtension": ".o2d5xxapp",
-              "ConfigExtension": ".o2d5xxcfg"}
-    O2I5xx = {"ArticleNumber": ["O2I5xx"],
+              "LogicGraphConfigExtension": ".o2xlgc",
+              "ApplicationConfigExtension": ".o2d5xxapp",
+              "DeviceConfigExtension": ".o2d5xxcfg",
+              "PCICConfigExtension": ".o2xpcic"}
+    O2I5xx = {"ArticleNumber": ["O2I5xx",
+                                "O2I510", "O2I511", "O2I512",
+                                "O2I513", "O2I514", "O2I500",
+                                "O2I515", "O2I501",  "O2I502",
+                                "O2I503", "O2I504", "O2I505"],
               "DeviceType": ["1:256", 0x100],
-              "ApplicationExtension": ".o2i5xxapp",
-              "ConfigExtension": ".o2i5xxcfg"}
+              "LogicGraphConfigExtension": ".o2xlgc",
+              "ApplicationConfigExtension": ".o2i5xxapp",
+              "DeviceConfigExtension": ".o2i5xxcfg",
+              "PCICConfigExtension": ".o2xpcic"}
+    O2I4xx = {"ArticleNumber": ["O2I4xx",
+                                "O2I410", "O2I412", "O2I414",
+                                "O2I400", "O2I420", "O2I402",
+                                "O2I422", "O2I404", "O2I424"],
+              "DeviceType": ["1:260", 0x104],
+              "LogicGraphConfigExtension": ".o2xlgc",
+              "ApplicationConfigExtension": ".o2i4xxapp",
+              "DeviceConfigExtension": ".o2i4xxcfg",
+              "PCICConfigExtension": ".o2xpcic"}
 
     @classmethod
     def getData(cls, key, value):

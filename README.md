@@ -215,9 +215,9 @@ must be called to make others available:
         ├── getApplicationDetails(applicationIndex)
         ├── resetStatistics()  
         ├── writeApplicationConfigFile(applicationName, data)  
-        ├── writeConfigFile(configName, data)  
+        ├── writeDeviceConfigFile(configName, data)  
         ├── readApplicationConfigFile(applicationFile)
-        ├── readConfigFile(configFile)
+        ├── readDeviceConfigFile(configFile)
         └── setOperatingMode(mode)  
             └── Edit (object)
                 ├── @property
@@ -239,10 +239,16 @@ must be called to make others available:
                         │   ├── HWROI
                         │   ├── Rotate180Degree
                         │   ├── FocusDistance
-                        │   └── ImageEvaluationOrder
+                        │   ├── ImageEvaluationOrder
+                        │   ├── PcicTcpResultSchema
+                        │   └── LogicGraph
                         ├── getAllParameters()
                         ├── getParameter(value)
                         ├── getAllParameterLimits()
+                        ├── writeLogicGraphSchemaFile()
+                        ├── readLogicGraphSchemaFile()
+                        ├── writePcicTcpSchemaFile()
+                        ├── readPcicTcpSchemaFile()
                         ├── save()
                         ├── validate()
                         ├── getImagerConfigList()

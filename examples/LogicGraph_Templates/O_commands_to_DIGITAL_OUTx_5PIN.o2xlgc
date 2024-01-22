@@ -1,0 +1,62 @@
+{
+    "IOMap": {
+        "OUT1": "PCIC_OUT",
+        "OUT2": "PCIC_OUT"
+    },
+    "blocks": {
+        "B00001": {
+            "pos": {
+                "x": 575,
+                "y": 64
+            },
+            "properties": {
+                "pulse_delay": 0,
+                "pulse_duration": 0
+            },
+            "type": "DIGITAL_OUT1"
+        },
+        "B00003": {
+            "pos": {
+                "x": 576,
+                "y": 204
+            },
+            "properties": {
+                "pulse_delay": 0,
+                "pulse_duration": 0
+            },
+            "type": "DIGITAL_OUT2"
+        },
+        "B00004": {
+            "pos": {
+                "x": 94,
+                "y": 64
+            },
+            "properties": {
+            },
+            "type": "PIN_EVENT_PCIC_O_CMD"
+        },
+        "B00006": {
+            "pos": {
+                "x": 95,
+                "y": 202
+            },
+            "properties": {
+            },
+            "type": "PIN_EVENT_PCIC_O_CMD"
+        }
+    },
+    "connectors": {
+        "C00000": {
+            "dst": "B00003",
+            "dstEP": 0,
+            "src": "B00006",
+            "srcEP": 0
+        },
+        "C00001": {
+            "dst": "B00001",
+            "dstEP": 0,
+            "src": "B00004",
+            "srcEP": 0
+        }
+    }
+}

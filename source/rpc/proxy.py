@@ -33,9 +33,6 @@ class BaseProxy(object):
         """
         return self.__proxy.__getattr__(name)
 
-    # def __del__(self):
-    #     self.close()
-
     def close(self):
         self.__transport.close()
         self.__transport = None

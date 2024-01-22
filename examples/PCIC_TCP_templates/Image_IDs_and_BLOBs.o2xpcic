@@ -1,4 +1,4 @@
-images_config = {
+{
     "elements": [
         {
             "id": "start_string",

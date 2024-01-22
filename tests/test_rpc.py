@@ -17,7 +17,7 @@ class TestRPC_MainAPI(TestCase):
                 cls.config_backup = rpc.session.exportConfig()
                 cls.active_application_backup = rpc.getParameter("ActiveApplication")
                 configFile = getImportSetupByPinLayout(rpc=rpc)['config_file']
-                configFile = rpc.session.readConfigFile(configFile=configFile)
+                configFile = rpc.session.readDeviceConfigFile(configFile=configFile)
                 rpc.session.importConfig(configFile, global_settings=True, network_settings=False,
                                          applications=True)
                 rpc.switchApplication(1)
