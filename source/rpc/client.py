@@ -7,8 +7,8 @@ import matplotlib.image as mpimg
 from .proxy import MainProxy, SessionProxy, EditProxy, ApplicationProxy, ImagerProxy
 from .proxy import Session, Edit, Application, Imager
 from .utils import timeout
-from source.device.client import O2x5xxPCICDevice
-from source.static.devices import DevicesMeta
+from ..device.client import O2x5xxPCICDevice
+from ..static.devices import DevicesMeta
 
 
 class O2x5xxRPCDevice(object):
