@@ -8,12 +8,12 @@ import json
 import re
 import io
 
-SOCKET_TIMEOUT = 5
+SOCKET_TIMEOUT = 10
 
 
 class Client(object):
 
-    def __init__(self, address, port, autoconnect=True, timeout=5):
+    def __init__(self, address, port, autoconnect=True, timeout=SOCKET_TIMEOUT):
         self.address = address
         self.port = port
         self.autoconnect = autoconnect
@@ -35,6 +35,7 @@ class Client(object):
         """
         if not self.connected:
             self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.pcicSocket.settimeout(self.timeout)
             self.pcicSocket.connect((self.address, self.port))
             self.connected = True
 
@@ -72,6 +73,27 @@ class Client(object):
             data = data + data_part
         self.recv_counter += number_bytes
         return data
+
+    @property
+    def pcic_socket_timeout(self) -> float:
+        """
+		Getter for timeout value of lowlevel connection socket.
+
+		:return: (float) socket timeout in seconds
+		"""
+        return self.timeout
+
+    @pcic_socket_timeout.setter
+    def pcic_socket_timeout(self, value: float) -> None:
+        """
+        Setter for timeout value of lowlevel connection socket.
+
+        :param value: (float) in seconds.
+        :return: None
+        """
+        if self.pcicSocket:
+            self.pcicSocket.settimeout(value)
+        self.timeout = value
 
 
 class PCICV3Client(Client):
