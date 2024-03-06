@@ -12,6 +12,7 @@ SOCKET_TIMEOUT = 5
 
 
 class Client(object):
+    BUF_LEN = 4096
 
     def __init__(self, address, port, autoconnect=True, timeout=5):
         self.address = address
@@ -60,18 +61,24 @@ class Client(object):
     def recv(self, number_bytes):
         """
         Read the next bytes of the answer with a defined length.
+        Note: blocks until number_bytes will be received.
 
         :param number_bytes: (int) length of bytes
         :return: the data as bytearray
         """
-        data = bytearray()
-        while len(data) < number_bytes:
-            data_part = self.pcicSocket.recv(number_bytes - len(data))
-            if len(data_part) == 0:
+        total_recved = 0
+        fragments = []
+
+        while total_recved < number_bytes:
+            chunk = self.pcicSocket.recv(
+                Client.BUF_LEN if number_bytes - total_recved >= Client.BUF_LEN else number_bytes)
+
+            if len(chunk) == 0:
                 raise RuntimeError("Connection to server closed")
-            data = data + data_part
-        self.recv_counter += number_bytes
-        return data
+
+            total_recved += len(chunk)
+            fragments.append(chunk)
+        return b''.join(fragments)
 
 
 class PCICV3Client(Client):
