@@ -75,6 +75,7 @@ class Client(object):
 
 
 class PCICV3Client(Client):
+    DEFAULT_TICKET = "1000"
 
     def read_next_answer(self):
         """
@@ -110,14 +111,11 @@ class PCICV3Client(Client):
         :param cmd: (string) Command which you want to send to the device.
         :return: answer of the device as a string
         """
-        cmd_length = len(cmd) + 6
-        length_header = str.encode("1000L%09d\r\n" % cmd_length)
-        self.pcicSocket.sendall(length_header)
-        self.pcicSocket.sendall(b"1000")
-        self.pcicSocket.sendall(cmd.encode())
-        newline = "\r\n"
-        self.pcicSocket.sendall(newline.encode())
-        answer = self.read_answer("1000")
+        # Send <ticket>L<9 digit, size of data after new line>\r\n
+        #      <ticket><command>\r\n
+        self.pcicSocket.sendall(f"{PCICV3Client.DEFAULT_TICKET}L{len(cmd) + 6:09}\r\n" \
+                                f"{PCICV3Client.DEFAULT_TICKET}{cmd}\r\n".encode())
+        answer = self.read_answer(PCICV3Client.DEFAULT_TICKET)
         return answer
 
 
