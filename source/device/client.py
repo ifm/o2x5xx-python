@@ -1,16 +1,16 @@
-from ..pcic import O2x5xxPCICDevice
+from ..pcic import (O2x5xxPCICDevice, SOCKET_TIMEOUT)
 from ..rpc import O2x5xxRPCDevice
 
 
 class O2x5xxDevice(O2x5xxPCICDevice):
-    def __init__(self, address="192.168.0.69", port=50010, autoconnect=True):
+    def __init__(self, address="192.168.0.69", port=50010, autoconnect=True, timeout=SOCKET_TIMEOUT):
         self._address = address
         self._port = port
         self._autoconnect = autoconnect
         self._rpc = None
         if autoconnect:
             self._rpc = O2x5xxRPCDevice(address=self._address)
-        super(O2x5xxPCICDevice, self).__init__(address, port, autoconnect)
+        super(O2x5xxPCICDevice, self).__init__(address, port, autoconnect, timeout)
 
     def __enter__(self):
         return self
@@ -27,15 +27,17 @@ class O2x5xxDevice(O2x5xxPCICDevice):
 
 
 class O2x5xxDeviceV2(object):
-    def __init__(self, address="192.168.0.69", port=50010, autoconnect=True):
+    def __init__(self, address="192.168.0.69", port=50010, autoconnect=True, timeout=SOCKET_TIMEOUT):
         self._address = address
         self._port = port
+        self._timeout = timeout
         self._autoconnect = autoconnect
         self._pcic = None
         self._rpc = None
 
     def __enter__(self):
-        self._pcic = O2x5xxPCICDevice(address=self._address, port=self._port, autoconnect=self._autoconnect)
+        self._pcic = O2x5xxPCICDevice(address=self._address, port=self._port, autoconnect=self._autoconnect,
+                                      timeout=self._timeout)
         self._rpc = O2x5xxRPCDevice(address=self._address)
         return self
 
