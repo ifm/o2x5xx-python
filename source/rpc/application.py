@@ -278,6 +278,7 @@ class Application(object):
                              .format(self.getAllParameterLimits()["FocusDistance"]))
         self._applicationProxy.setParameter("FocusDistance", value)
         # TODO: Wird hier geblockt? Wird der Focus Distance direkt nach dem setzen angefahren?
+        # Edit: Kein Error, jedoch sind die Bilder unscharf wenn direkt danach das Bild angefordert wird: Fokus wird während requestImage im PCIC noch angefahren!
         self.waitForConfigurationDone()
 
     @property

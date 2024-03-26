@@ -2,7 +2,23 @@ import functools
 import multiprocessing.pool
 
 
-def socket_exception_handler(timeout):
+def timeout(max_timeout):
+    """Timeout decorator, parameter in seconds."""
+    def timeout_decorator(item):
+        """Wrap the original function."""
+        @functools.wraps(item)
+        def func_wrapper(*args, **kwargs):
+            """Closure for function."""
+            pool = multiprocessing.pool.ThreadPool(processes=1)
+            async_result = pool.apply_async(item, args, kwargs)
+            pool.close()
+            # raises a TimeoutError if execution exceeds max_timeout
+            return async_result.get(max_timeout)
+        return func_wrapper
+    return timeout_decorator
+
+
+def socket_exception_handler(max_timeout):
     """Timeout decorator, parameter in seconds."""
 
     def exception_decorator(item):
@@ -16,7 +32,8 @@ def socket_exception_handler(timeout):
         @functools.wraps(item)
         def func_wrapper(*args, **kwargs):
             """Closure for function."""
-            max_timeout = getattr(args[0], "timeout")
+            # max_timeout = getattr(args[0], "timeout")
+            # max_timeout = timeout
             try:
                 pool = multiprocessing.pool.ThreadPool(processes=1)
                 async_result = pool.apply_async(item, args, kwargs)
