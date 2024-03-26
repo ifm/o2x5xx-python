@@ -1,6 +1,6 @@
 from unittest import TestCase
-from source import O2x5xxRPCDevice
 from tests.utils import *
+from source import O2x5xxRPCDevice
 from .config import *
 
 
@@ -13,23 +13,25 @@ class TestRPC_ImagerObject(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         with O2x5xxRPCDevice(deviceAddress) as rpc:
-            with rpc.mainProxy.requestSession():
-                cls.config_backup = rpc.session.exportConfig()
+            cls.config_file = getImportSetupByPinLayout(rpc=rpc)['config_file']
+            cls.app_import_file = getImportSetupByPinLayout(rpc=rpc)['app_import_file']
+            if importDeviceConfigUnittests:
                 cls.active_application_backup = rpc.getParameter("ActiveApplication")
-                cls.config_file = getImportSetupByPinLayout(rpc=rpc)['config_file']
-                cls.app_import_file = getImportSetupByPinLayout(rpc=rpc)['app_import_file']
-                _configFile = rpc.session.readDeviceConfigFile(configFile=cls.config_file)
-                rpc.session.importConfig(_configFile, global_settings=True, network_settings=False,
-                                         applications=True)
+                with rpc.mainProxy.requestSession():
+                    cls.config_backup = rpc.session.exportConfig()
+                    _configFile = rpc.session.readDeviceConfigFile(configFile=cls.config_file)
+                    rpc.session.importConfig(_configFile, global_settings=True, network_settings=False,
+                                             applications=True)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        with O2x5xxRPCDevice(deviceAddress) as rpc:
-            with rpc.mainProxy.requestSession():
-                rpc.session.importConfig(cls.config_backup, global_settings=True, network_settings=False,
-                                         applications=True)
-                if cls.active_application_backup != "0":
-                    rpc.switchApplication(cls.active_application_backup)
+        if importDeviceConfigUnittests:
+            with O2x5xxRPCDevice(deviceAddress) as rpc:
+                with rpc.mainProxy.requestSession():
+                    rpc.session.importConfig(cls.config_backup, global_settings=True, network_settings=False,
+                                             applications=True)
+                    if cls.active_application_backup != "0":
+                        rpc.switchApplication(cls.active_application_backup)
 
     def setUp(self) -> None:
         with O2x5xxRPCDevice(deviceAddress) as self.rpc:
@@ -263,6 +265,27 @@ class TestRPC_ImagerObject(TestCase):
                     app_index=self.newApplicationIndex):
                 with self.rpc.applicationProxy.editImager(imager_index=1):
                     self.rpc.imager.startCalculateAutofocus()
+                    self.assertEqual(self.rpc.imager.getProgressCalculateAutofocus(), 1.0)
+
+    def test_startCalculateAutofocusWithArguments(self):
+        with O2x5xxRPCDevice(deviceAddress) as self.rpc, self.rpc.mainProxy.requestSession():
+            with self.rpc.sessionProxy.setOperatingMode(mode=1), self.rpc.editProxy.editApplication(
+                    app_index=self.newApplicationIndex):
+                with self.rpc.applicationProxy.editImager(imager_index=1):
+                    focusROIsZone = [{"id": 0, "group": 0, "type": "Rect", "width": 100,
+                                      "height": 50, "angle": 45, "center_x": 123, "center_y": 42},
+                                     {"id": 0, "group": 0, "type": "Ellipse", "width": 50,
+                                      "height": 100, "angle": 45, "center_x": 42, "center_y": 123},
+                                     {"id": 0, "group": 0, "type": "Poly", "points": [
+                                         {"x": 100, "y": 100}, {"x": 234, "y": 100}, {"x": 150, "y": 300}]}]
+                    focusRODsZone = [{"id": 0, "group": 0, "type": "Rect", "width": 30,
+                                      "height": 40, "angle": 45, "center_x": 123, "center_y": 42},
+                                     {"id": 0, "group": 0, "type": "Ellipse", "width": 20,
+                                      "height": 100, "angle": 90, "center_x": 42, "center_y": 153},
+                                     {"id": 0, "group": 0, "type": "Poly", "points": [
+                                         {"x": 100, "y": 100}, {"x": 334, "y": 300}, {"x": 250, "y": 400}]}]
+                    self.rpc.imager.startCalculateAutofocus(ROIs=focusROIsZone,
+                                                            RODs=focusRODsZone)
                     self.assertEqual(self.rpc.imager.getProgressCalculateAutofocus(), 1.0)
 
     def test_getAutofocusDistances(self):

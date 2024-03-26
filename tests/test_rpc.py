@@ -1,35 +1,37 @@
 import time
 from unittest import TestCase
 import numpy as np
-from source import O2x5xxRPCDevice
 from tests.utils import *
 from .config import *
 
 
 class TestRPC_MainAPI(TestCase):
+    config_file = None
     config_backup = None
     active_application_backup = None
 
     @classmethod
     def setUpClass(cls) -> None:
         with O2x5xxRPCDevice(deviceAddress) as rpc:
-            with rpc.mainProxy.requestSession():
-                cls.config_backup = rpc.session.exportConfig()
+            cls.config_file = getImportSetupByPinLayout(rpc=rpc)['config_file']
+            cls.app_import_file = getImportSetupByPinLayout(rpc=rpc)['app_import_file']
+            if importDeviceConfigUnittests:
                 cls.active_application_backup = rpc.getParameter("ActiveApplication")
-                configFile = getImportSetupByPinLayout(rpc=rpc)['config_file']
-                configFile = rpc.session.readDeviceConfigFile(configFile=configFile)
-                rpc.session.importConfig(configFile, global_settings=True, network_settings=False,
-                                         applications=True)
-                rpc.switchApplication(1)
+                with rpc.mainProxy.requestSession():
+                    cls.config_backup = rpc.session.exportConfig()
+                    _configFile = rpc.session.readDeviceConfigFile(configFile=cls.config_file)
+                    rpc.session.importConfig(_configFile, global_settings=True, network_settings=False,
+                                             applications=True)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        with O2x5xxRPCDevice(deviceAddress) as rpc:
-            with rpc.mainProxy.requestSession():
-                rpc.session.importConfig(cls.config_backup, global_settings=True, network_settings=False,
-                                         applications=True)
-                if cls.active_application_backup != "0":
-                    rpc.switchApplication(cls.active_application_backup)
+        if importDeviceConfigUnittests:
+            with O2x5xxRPCDevice(deviceAddress) as rpc:
+                with rpc.mainProxy.requestSession():
+                    rpc.session.importConfig(cls.config_backup, global_settings=True, network_settings=False,
+                                             applications=True)
+                    if cls.active_application_backup != "0":
+                        rpc.switchApplication(cls.active_application_backup)
 
     def setUp(self) -> None:
         with O2x5xxRPCDevice(deviceAddress) as rpc:
