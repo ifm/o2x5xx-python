@@ -4,6 +4,8 @@ from .utils import firmwareWarning
 import json
 import os
 import base64
+from .edit import Edit
+from .proxy import EditProxy
 
 
 class Session(object):
@@ -14,6 +16,41 @@ class Session(object):
     def __init__(self, sessionProxy, device):
         self._sessionProxy = sessionProxy
         self._device = device
+
+    def startEdit(self) -> Edit:
+        """
+        Starting the edit mode and requesting an Edit object.
+
+        :return:
+        """
+        self.setOperatingMode(1)
+        _editURL = self._sessionProxy.baseURL + 'edit/'
+        setattr(self._device, "_editURL", _editURL)
+        editProxy = EditProxy(url=_editURL, device=self._device)
+        setattr(self._device, "_editProxy", editProxy)
+        return self._device.edit
+
+    def stopEdit(self) -> None:
+        """
+        Stopping the edit mode.
+
+        :return: None
+        """
+        self.setOperatingMode(0)
+        self.device._editURL = None
+        self.device._editProxy = None
+
+    def setOperatingMode(self, mode) -> [None, Edit]:
+        """
+        Changes the operation mode of the device. Setting this to "edit" will enable the "EditMode"-object on RPC.
+
+        :param mode: 1 digit
+                     0: run mode
+                     1: edit mode
+                     2: simulation mode (Not implemented!)
+        :return: None or Edit object
+        """
+        self.__getattr__('setOperatingMode')(mode)
 
     def exportConfig(self) -> bytearray:
         """
@@ -209,3 +246,13 @@ class Session(object):
                     return decoded
             else:
                 raise FileExistsError("File {} does not exist!".format(configFile))
+
+    def __getattr__(self, name):
+        """Pass given name to the actual xmlrpc.client.ServerProxy.
+
+        Args:
+            name (str): name of attribute
+        Returns:
+            Attribute of xmlrpc.client.ServerProxy
+        """
+        return self._sessionProxy.__getattr__(name)

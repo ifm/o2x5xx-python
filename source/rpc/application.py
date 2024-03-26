@@ -1,6 +1,7 @@
 import json
 import os
 import warnings
+from .proxy import ImagerProxy
 
 
 class Application(object):
@@ -11,6 +12,25 @@ class Application(object):
     def __init__(self, applicationProxy, device):
         self._applicationProxy = applicationProxy
         self._device = device
+
+    def editImage(self, imager_index: int):
+        """
+        Requests an Imager object specified by the image index.
+
+        :param imager_index: (int) index of image from ImagerConfigList
+        :return: Imager (object)
+        """
+        imageIDs = [int(x["Id"]) for x in self.getImagerConfigList()]
+        if imager_index not in imageIDs:
+            raise ValueError("Image index {} not available. Choose one imageIndex from following"
+                             "ImagerConfigList or create a new one with method createImagerConfig():\n{}"
+                             .format(imager_index, self.getImagerConfigList()))
+
+        _imagerURL = self._applicationProxy.baseURL + 'imager_{0:03d}/'.format(imager_index)
+        setattr(self._device, "_imagerURL", _imagerURL)
+        _imagerProxy = ImagerProxy(url=_imagerURL, device=self._device)
+        setattr(self._device, "_imagerProxy", _imagerProxy)
+        return self._device.imager
 
     def getAllParameters(self):
         """
@@ -508,3 +528,13 @@ class Application(object):
         :return: None
         """
         self._applicationProxy.waitForConfigurationDone()
+
+    def __getattr__(self, name):
+        """Pass given name to the actual xmlrpc.client.ServerProxy.
+
+        Args:
+            name (str): name of attribute
+        Returns:
+            Attribute of xmlrpc.client.ServerProxy
+        """
+        return self._editProxy.__getattr__(name)

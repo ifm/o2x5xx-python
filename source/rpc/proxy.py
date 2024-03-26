@@ -1,23 +1,41 @@
+import socket
 import xmlrpc.client
 from contextlib import contextmanager
 from threading import Timer
-from .session import Session
-from .edit import Edit
-from .application import Application
-from .imager import Imager
+# from .session import Session
+# from .edit import Edit
+# from .application import Application
+# from .imager import Imager
+
+SOCKET_TIMEOUT = 10
 
 
 class BaseProxy(object):
     """Base class for all proxies."""
 
-    def __init__(self, url):
+    def __init__(self, url, timeout=SOCKET_TIMEOUT):
         """Initialize the actual xmlrpc.client.ServerProxy from given url.
 
         Args:
             url (str): url for xmlrpc.client.ServerProxy
         """
-        self.__transport = xmlrpc.client.Transport()
-        self.__proxy = xmlrpc.client.ServerProxy(uri=url, transport=self.__transport)
+        try:
+            socket.setdefaulttimeout(timeout)
+            self.__transport = xmlrpc.client.Transport()
+            self.__proxy = xmlrpc.client.ServerProxy(uri=url, transport=self.__transport)
+        except TimeoutError:
+            socket.setdefaulttimeout(None)
+
+    @property
+    def timeout(self):
+        if self.__transport._connection[1]:
+            return self.__transport._connection[1].timeout
+        return socket.getdefaulttimeout
+
+    @timeout.setter
+    def timeout(self, value):
+        if self.__transport._connection[1]:
+            self.__transport._connection[1].timeout = value
 
     @property
     def proxy(self):
@@ -42,7 +60,7 @@ class BaseProxy(object):
 class MainProxy(BaseProxy):
     """Proxy representing mainProxy."""
 
-    def __init__(self, url, device):
+    def __init__(self, url, timeout, device):
         """Initialize main proxy member, device and baseURL.
 
         Args:
@@ -52,7 +70,7 @@ class MainProxy(BaseProxy):
         self.baseURL = url
         self.device = device
 
-        super(MainProxy, self).__init__(url)
+        super(MainProxy, self).__init__(url, timeout)
 
     @contextmanager
     def requestSession(self, password='', session_id='0' * 32):
@@ -61,8 +79,6 @@ class MainProxy(BaseProxy):
         Args:
             password (str): password for session
             session_id (str): session id
-
-        Initializes various proxies and calls installAdditionalProxies().
         """
         try:
             self.device._sessionId = self.__getattr__('requestSession')(password, session_id)
@@ -100,7 +116,7 @@ class SessionProxy(BaseProxy):
         else:
             self.heartbeat(300)
 
-        self.device._session = Session(sessionProxy=self.proxy, device=self.device)
+        # self.device._session = Session(sessionProxy=self.proxy, device=self.device)
 
     def heartbeat(self, heartbeatInterval: int) -> int:
         """
@@ -155,8 +171,7 @@ class EditProxy(BaseProxy):
 
         super().__init__(url)
 
-        self.device._edit = Edit(editProxy=self.proxy,
-                                 device=self.device)
+        # self.device._edit = Edit(editProxy=self.proxy,  device=self.device)
 
     @contextmanager
     def editApplication(self, app_index):
@@ -187,8 +202,7 @@ class ApplicationProxy(BaseProxy):
 
         super().__init__(url)
 
-        self.device._application = Application(applicationProxy=self.proxy,
-                                               device=self.device)
+        # self.device._application = Application(applicationProxy=self.proxy, device=self.device)
 
     @contextmanager
     def editImager(self, imager_index):
@@ -221,5 +235,4 @@ class ImagerProxy(BaseProxy):
 
         super().__init__(url)
 
-        self.device._imager = Imager(imagerProxy=self.proxy,
-                                     device=self.device)
+        # self.device._imager = Imager(imagerProxy=self.proxy, device=self.device)
