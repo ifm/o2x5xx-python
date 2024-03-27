@@ -254,7 +254,7 @@ class TestRPC_ImagerObject(TestCase):
                                             {"x": 100, "y": 100}, {"x": 334, "y": 300}, {"x": 250, "y": 400}]}]
                     self.rpc.imager.startCalculateExposureTime(minAnalogGainFactor=2,
                                                                maxAnalogGainFactor=8,
-                                                               saturatedRatio=[0.25],
+                                                               saturatedRatio=0.25,
                                                                ROIs=exposureROIsZone,
                                                                RODs=exposureRODsZone)
                     self.assertEqual(self.rpc.imager.getProgressCalculateExposureTime(), 1.0)

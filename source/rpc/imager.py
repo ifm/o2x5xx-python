@@ -338,13 +338,13 @@ class Imager(object):
         self._device.waitForConfigurationDone()
 
     def startCalculateExposureTime(self, minAnalogGainFactor: int = None, maxAnalogGainFactor: int = None,
-                                   saturatedRatio: [float, list] = None, ROIs: list = None, RODs: list = None) -> None:
+                                   saturatedRatio: float = None, ROIs: list = None, RODs: list = None) -> None:
         """
         Starting calculation "auto exposure time" with analog gain factor, saturation ratio and ROI/ROD-definition.
 
         :param minAnalogGainFactor: Min. Analog Gain Factor upper limit. Possible values: 1, 2, 4 or 8
         :param maxAnalogGainFactor: Max. Analog Gain Factor upper limit. Possible values: 1, 2, 4 or 8
-        :param saturatedRatio: (float/array) maximum acceptable ratio of saturated pixels
+        :param saturatedRatio: (float/array) maximum acceptable ratio of saturated pixels. Possible range: [0.0, 1.0]
         :param ROIs: Auto-Exposure is calculated on these set of ROIs
         :param RODs: RODs are subtracted from the ROI union set
         :return: None
@@ -442,3 +442,13 @@ class Imager(object):
         if result:
             data = json.loads(result)
             return data
+
+    def __getattr__(self, name):
+        """Pass given name to the actual xmlrpc.client.ServerProxy.
+
+        Args:
+            name (str): name of attribute
+        Returns:
+            Attribute of xmlrpc.client.ServerProxy
+        """
+        return self._editProxy.__getattr__(name)
