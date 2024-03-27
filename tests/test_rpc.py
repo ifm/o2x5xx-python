@@ -1,6 +1,8 @@
 import time
 from unittest import TestCase
 import numpy as np
+import socket
+from source import O2x5xxRPCDevice
 from tests.utils import *
 from .config import *
 
@@ -39,6 +41,18 @@ class TestRPC_MainAPI(TestCase):
 
     def tearDown(self) -> None:
         pass
+
+    def test_timeout_with_invalid_ip(self):
+        TIMEOUT_VALUES = [1, 2, 5]
+        for timeout_value in TIMEOUT_VALUES:
+            start_time = time.time()
+            with self.assertRaises(socket.timeout):
+                with O2x5xxRPCDevice("192.168.0.5", timeout=timeout_value) as device:
+                    device.rpc.getParameter("ActiveApplication")
+            end_time = time.time()
+            duration_secs = end_time - start_time
+            self.assertLess(duration_secs, timeout_value+1)
+            self.assertGreater(duration_secs, timeout_value-1)
 
     def test_getParameter(self):
         with O2x5xxRPCDevice(deviceAddress) as rpc:

@@ -2,10 +2,6 @@ import socket
 import xmlrpc.client
 from contextlib import contextmanager
 from threading import Timer
-# from .session import Session
-# from .edit import Edit
-# from .application import Application
-# from .imager import Imager
 
 SOCKET_TIMEOUT = 10
 
@@ -13,29 +9,33 @@ SOCKET_TIMEOUT = 10
 class BaseProxy(object):
     """Base class for all proxies."""
 
-    def __init__(self, url, timeout=SOCKET_TIMEOUT):
+    def __init__(self, address, url, timeout=SOCKET_TIMEOUT):
         """Initialize the actual xmlrpc.client.ServerProxy from given url.
 
         Args:
+            address (str): ip address of host
             url (str): url for xmlrpc.client.ServerProxy
+            timeout (float): argument can be a non-negative floating point number
+            expressing seconds, or None. If None, SOCKET_TIMEOUT value is used as default
         """
         try:
-            socket.setdefaulttimeout(timeout)
             self.__transport = xmlrpc.client.Transport()
+            self.__transport.make_connection(host=address)
+            getattr(self.__transport, "_connection")[1].timeout = timeout
             self.__proxy = xmlrpc.client.ServerProxy(uri=url, transport=self.__transport)
         except TimeoutError:
-            socket.setdefaulttimeout(None)
+            self.close()
 
     @property
     def timeout(self):
-        if self.__transport._connection[1]:
-            return self.__transport._connection[1].timeout
+        if getattr(self.__transport, "_connection")[1]:
+            return getattr(self.__transport, "_connection")[1].timeout
         return socket.getdefaulttimeout
 
     @timeout.setter
     def timeout(self, value):
-        if self.__transport._connection[1]:
-            self.__transport._connection[1].timeout = value
+        if getattr(self.__transport, "_connection")[1]:
+            getattr(self.__transport, "_connection")[1].timeout = value
 
     @property
     def proxy(self):
@@ -54,23 +54,25 @@ class BaseProxy(object):
     def close(self):
         self.__transport.close()
         self.__transport = None
+        self.__connection = None
         self.__proxy = None
 
 
 class MainProxy(BaseProxy):
     """Proxy representing mainProxy."""
 
-    def __init__(self, url, timeout, device):
+    def __init__(self, address, url, timeout, device):
         """Initialize main proxy member, device and baseURL.
 
         Args:
             url (str): url for BaseProxy
             device (obj): device
         """
+        self.address = address
         self.baseURL = url
         self.device = device
 
-        super(MainProxy, self).__init__(url, timeout)
+        super(MainProxy, self).__init__(address, url, timeout)
 
     @contextmanager
     def requestSession(self, password='', session_id='0' * 32):
