@@ -1,18 +1,17 @@
+from .proxy import MainProxy, SessionProxy, EditProxy, ApplicationProxy, ImagerProxy
+from .session import Session
+from .edit import Edit
+from .application import Application
+from .imager import Imager
+from .utils import timeout
+from ..device.client import (O2x5xxPCICDevice, SOCKET_TIMEOUT)
+from ..static.devices import DevicesMeta
 import xmlrpc.client
 import json
 import io
 import time
 import numpy as np
 import matplotlib.image as mpimg
-from .proxy import MainProxy, SessionProxy, EditProxy, ApplicationProxy, ImagerProxy
-# from .proxy import Session, Edit, Application, Imager
-from .session import Session
-from.edit import Edit
-from .application import Application
-from .imager import Imager
-from .utils import timeout
-from ..device.client import (O2x5xxPCICDevice, SOCKET_TIMEOUT)
-from ..static.devices import DevicesMeta
 
 
 class O2x5xxRPCDevice(object):
@@ -25,7 +24,7 @@ class O2x5xxRPCDevice(object):
         self.timeout = timeout
         self.baseURL = "http://" + self.address + self.api_path
         self.mainURL = self.baseURL + "com.ifm.efector/"
-        self.mainProxy = MainProxy(url=self.mainURL, timeout=self.timeout, device=self)
+        self.mainProxy = MainProxy(address=self.address, url=self.mainURL, timeout=self.timeout, device=self)
         self.tcpIpPort = int(self.getParameter("PcicTcpPort"))
         self.deviceMeta = self._getDeviceMeta()
         self._session = None
