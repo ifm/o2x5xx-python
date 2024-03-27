@@ -43,12 +43,13 @@ class TestRPC_MainAPI(TestCase):
         pass
 
     def test_timeout_with_invalid_ip(self):
-        TIMEOUT_VALUES = [1, 2, 5]
+        TIMEOUT_VALUES = range(1, 6)
         for timeout_value in TIMEOUT_VALUES:
             start_time = time.time()
             with self.assertRaises(socket.timeout):
                 with O2x5xxRPCDevice("192.168.0.5", timeout=timeout_value) as device:
                     device.rpc.getParameter("ActiveApplication")
+                    self.assertEqual(device.mainProxy.timeout, timeout_value)
             end_time = time.time()
             duration_secs = end_time - start_time
             self.assertLess(duration_secs, timeout_value+1)

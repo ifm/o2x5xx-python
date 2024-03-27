@@ -24,7 +24,7 @@ class O2x5xxRPCDevice(object):
         self.timeout = timeout
         self.baseURL = "http://" + self.address + self.api_path
         self.mainURL = self.baseURL + "com.ifm.efector/"
-        self.mainProxy = MainProxy(address=self.address, url=self.mainURL, timeout=self.timeout, device=self)
+        self.mainProxy = MainProxy(url=self.mainURL, timeout=self.timeout, device=self)
         self.tcpIpPort = int(self.getParameter("PcicTcpPort"))
         self.deviceMeta = self._getDeviceMeta()
         self._session = None

@@ -1,4 +1,3 @@
-import socket
 import xmlrpc.client
 from contextlib import contextmanager
 from threading import Timer
@@ -9,20 +8,21 @@ SOCKET_TIMEOUT = 10
 class BaseProxy(object):
     """Base class for all proxies."""
 
-    def __init__(self, address, url, timeout=SOCKET_TIMEOUT):
+    def __init__(self, url, device, timeout=SOCKET_TIMEOUT):
         """Initialize the actual xmlrpc.client.ServerProxy from given url.
 
         Args:
-            address (str): ip address of host
             url (str): url for xmlrpc.client.ServerProxy
-            timeout (float): argument can be a non-negative floating point number
-            expressing seconds, or None. If None, SOCKET_TIMEOUT value is used as default
+            device (obj): device
+            timeout (float): Timeout values which is valid for the BaseProxy.
+            Argument can be a non-negative floating point number expressing seconds, or None.
+            If None, SOCKET_TIMEOUT value is used as default
         """
         try:
-            self.__transport = xmlrpc.client.Transport()
-            self.__transport.make_connection(host=address)
+            self.__proxy = xmlrpc.client.ServerProxy(uri=url, allow_none=True)
+            self.__transport = self.__proxy("transport")
+            self.__transport.make_connection(host=device.address)
             getattr(self.__transport, "_connection")[1].timeout = timeout
-            self.__proxy = xmlrpc.client.ServerProxy(uri=url, transport=self.__transport)
         except TimeoutError:
             self.close()
 
@@ -30,7 +30,6 @@ class BaseProxy(object):
     def timeout(self):
         if getattr(self.__transport, "_connection")[1]:
             return getattr(self.__transport, "_connection")[1].timeout
-        return socket.getdefaulttimeout
 
     @timeout.setter
     def timeout(self, value):
@@ -54,38 +53,43 @@ class BaseProxy(object):
     def close(self):
         self.__transport.close()
         self.__transport = None
-        self.__connection = None
         self.__proxy = None
 
 
 class MainProxy(BaseProxy):
     """Proxy representing mainProxy."""
 
-    def __init__(self, address, url, timeout, device):
+    def __init__(self, url, device, timeout):
         """Initialize main proxy member, device and baseURL.
 
         Args:
             url (str): url for BaseProxy
             device (obj): device
+            timeout (float): Timeout values which is valid for the MainProxy.
+            Argument can be a non-negative floating point number expressing seconds, or None.
+            If None, SOCKET_TIMEOUT value is used as default
         """
-        self.address = address
         self.baseURL = url
         self.device = device
 
-        super(MainProxy, self).__init__(address, url, timeout)
+        super(MainProxy, self).__init__(url, device, timeout)
 
     @contextmanager
-    def requestSession(self, password='', session_id='0' * 32):
+    def requestSession(self, password='', session_id='0' * 32, timeout=SOCKET_TIMEOUT):
         """Generator for requestSession to be used in with statement.
 
         Args:
             password (str): password for session
             session_id (str): session id
+            timeout (float): Timeout values which is valid for the SessionProxy.
+            Argument can be a non-negative floating point number expressing seconds, or None.
+            If None, SOCKET_TIMEOUT value is used as default
         """
         try:
             self.device._sessionId = self.__getattr__('requestSession')(password, session_id)
             self.device._sessionURL = self.baseURL + 'session_' + session_id + '/'
-            self.device._sessionProxy = SessionProxy(url=self.device._sessionURL, device=self.device)
+            self.device._sessionProxy = SessionProxy(url=self.device._sessionURL,
+                                                     device=self.device, timeout=timeout)
             yield
         finally:
             try:
@@ -103,13 +107,13 @@ class MainProxy(BaseProxy):
 class SessionProxy(BaseProxy):
     """Proxy representing sessionProxy."""
 
-    def __init__(self, url, device, autoHeartbeat=True, autoHeartbeatInterval=30):
+    def __init__(self, url, device, timeout=SOCKET_TIMEOUT, autoHeartbeat=True, autoHeartbeatInterval=30):
         self.baseURL = url
         self.device = device
         self.autoHeartbeat = autoHeartbeat
         self.autoHeartbeatInterval = autoHeartbeatInterval
 
-        super().__init__(url)
+        super().__init__(url, device, timeout)
 
         if self.autoHeartbeat:
             self.heartbeat(self.autoHeartbeatInterval)
@@ -117,8 +121,6 @@ class SessionProxy(BaseProxy):
             self.autoHeartbeatTimer.start()
         else:
             self.heartbeat(300)
-
-        # self.device._session = Session(sessionProxy=self.proxy, device=self.device)
 
     def heartbeat(self, heartbeatInterval: int) -> int:
         """
@@ -145,17 +147,19 @@ class SessionProxy(BaseProxy):
         self.autoHeartbeatTimer.start()
 
     @contextmanager
-    def setOperatingMode(self, mode):
+    def setOperatingMode(self, mode, timeout=SOCKET_TIMEOUT):
         """Generator for setOperatingMode to be used in with statement.
 
         Args:
             mode (int): operating mode
+            timeout (float): Timeout values which is valid for the EditProxy.
+            Argument can be a non-negative floating point number expressing seconds, or None.
+            If None, SOCKET_TIMEOUT value is used as default
         """
         try:
             self.__getattr__('setOperatingMode')(mode)
             self.device._editURL = self.baseURL + 'edit/'
-            self.device._editProxy = EditProxy(url=self.device._editURL,
-                                               device=self.device)
+            self.device._editProxy = EditProxy(url=self.device._editURL, device=self.device, timeout=timeout)
             yield
         finally:
             self.__getattr__('setOperatingMode')(0)
@@ -167,26 +171,27 @@ class SessionProxy(BaseProxy):
 class EditProxy(BaseProxy):
     """Proxy representing editProxy."""
 
-    def __init__(self, url, device):
+    def __init__(self, url, device, timeout=SOCKET_TIMEOUT):
         self.baseURL = url
         self.device = device
 
-        super().__init__(url)
-
-        # self.device._edit = Edit(editProxy=self.proxy,  device=self.device)
+        super().__init__(url, device, timeout)
 
     @contextmanager
-    def editApplication(self, app_index):
+    def editApplication(self, app_index, timeout=SOCKET_TIMEOUT):
         """Generator for editApplication to be used in with statement.
 
         Args:
             app_index (int): application index
+            timeout (float): Timeout values which is valid for the ApplicationProxy.
+            Argument can be a non-negative floating point number expressing seconds, or None.
+            If None, SOCKET_TIMEOUT value is used as default
         """
         try:
             self.__getattr__('editApplication')(app_index)
             self.device._applicationURL = self.baseURL + "application/"
-            self.device._applicationProxy = ApplicationProxy(url=self.device._applicationURL,
-                                                             device=self.device)
+            self.device._applicationProxy = ApplicationProxy(url=self.device._applicationURL, device=self.device,
+                                                             timeout=timeout)
             yield
         finally:
             self.__getattr__('stopEditingApplication')()
@@ -198,20 +203,21 @@ class EditProxy(BaseProxy):
 class ApplicationProxy(BaseProxy):
     """Proxy representing editProxy."""
 
-    def __init__(self, url, device):
+    def __init__(self, url, device, timeout=SOCKET_TIMEOUT):
         self.baseURL = url
         self.device = device
 
-        super().__init__(url)
-
-        # self.device._application = Application(applicationProxy=self.proxy, device=self.device)
+        super().__init__(url, device, timeout)
 
     @contextmanager
-    def editImager(self, imager_index):
+    def editImager(self, imager_index, timeout=SOCKET_TIMEOUT):
         """Generator for editImager to be used in with statement.
 
         Args:
             imager_index (int): imager index
+            timeout (float): Timeout values which is valid for the ImagerProxy.
+            Argument can be a non-negative floating point number expressing seconds, or None.
+            If None, SOCKET_TIMEOUT value is used as default
         """
         try:
             imager_IDs = [int(x["Id"]) for x in self.proxy.getImagerConfigList()]
@@ -220,7 +226,8 @@ class ApplicationProxy(BaseProxy):
                                  "ImagerConfigList or create a new one with method createImagerConfig():\n{}"
                                  .format(imager_index, self.proxy.getImagerConfigList()))
             self.device._imagerURL = self.baseURL + 'imager_{0:03d}/'.format(imager_index)
-            self.device._imagerProxy = ImagerProxy(url=self.device._imagerURL, device=self.device)
+            self.device._imagerProxy = ImagerProxy(url=self.device._imagerURL, device=self.device,
+                                                   timeout=timeout)
             yield
         finally:
             self.device._imagerProxy.close()
@@ -231,10 +238,8 @@ class ApplicationProxy(BaseProxy):
 class ImagerProxy(BaseProxy):
     """Proxy representing editProxy."""
 
-    def __init__(self, url, device):
+    def __init__(self, url, device, timeout=SOCKET_TIMEOUT):
         self.baseURL = url
         self.device = device
 
-        super().__init__(url)
-
-        # self.device._imager = Imager(imagerProxy=self.proxy, device=self.device)
+        super().__init__(url, device, timeout)
