@@ -194,7 +194,7 @@ class Application(object):
 
         :return:
         """
-        result = eval(self.getParameter("HWROI"))
+        result = json.loads(self.getParameter("HWROI"))
         return result
 
     @HWROI.setter

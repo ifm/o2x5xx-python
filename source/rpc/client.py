@@ -206,7 +206,7 @@ class O2x5xxRPCDevice(object):
         :param applicationIndex: (int) Index of application (Range 1-32)
         :return: (dict)
         """
-        result = eval(self.mainProxy.getApplicationStatisticData(applicationIndex))
+        result = json.loads(self.mainProxy.getApplicationStatisticData(applicationIndex))
         return result
 
     def getReferenceImage(self) -> np.ndarray:
@@ -248,7 +248,7 @@ class O2x5xxRPCDevice(object):
         :return: (dict) measure result
         """
         input_stringified = json.dumps(measureInput)
-        result = eval(self.mainProxy.measure(input_stringified))
+        result = json.loads(self.mainProxy.measure(input_stringified))
         return result
 
     def trigger(self) -> str:
