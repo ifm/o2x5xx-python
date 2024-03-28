@@ -1,3 +1,6 @@
+from .proxy import ApplicationProxy
+
+
 class Edit(object):
     """
     Edit object
@@ -6,6 +9,19 @@ class Edit(object):
     def __init__(self, editProxy, device):
         self._editProxy = editProxy
         self._device = device
+
+    def editApplication(self, app_index):
+        """Generator for editApplication to be used in with statement.
+
+        Args:
+            app_index (int): application index
+        """
+        self.__getattr__('editApplication')(app_index)
+        _applicationURL = self._editProxy.baseURL + "application/"
+        setattr(self._device, "_applicationURL", _applicationURL)
+        _applicationProxy = ApplicationProxy(url=_applicationURL, device=self._device)
+        setattr(self._device, "_applicationProxy", _applicationProxy)
+        return self._device.application
 
     def createApplication(self, deviceType="WithModels") -> int:
         """
@@ -72,3 +88,13 @@ class Edit(object):
                 app["Index"] = int(applicationIndexTo)
             move_list.append({'Id': app['Id'], 'Index': app['Index']})
         self._editProxy.moveApplications(move_list)
+
+    def __getattr__(self, name):
+        """Pass given name to the actual xmlrpc.client.ServerProxy.
+
+        Args:
+            name (str): name of attribute
+        Returns:
+            Attribute of xmlrpc.client.ServerProxy
+        """
+        return self._editProxy.__getattr__(name)

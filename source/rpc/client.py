@@ -1,28 +1,33 @@
+from .proxy import MainProxy, SessionProxy, EditProxy, ApplicationProxy, ImagerProxy
+from .session import Session
+from .edit import Edit
+from .application import Application
+from .imager import Imager
+from .utils import timeout
+from ..device.client import (O2x5xxPCICDevice, SOCKET_TIMEOUT)
+from ..static.devices import DevicesMeta
 import xmlrpc.client
 import json
 import io
 import time
 import numpy as np
 import matplotlib.image as mpimg
-from .proxy import MainProxy, SessionProxy, EditProxy, ApplicationProxy, ImagerProxy
-from .proxy import Session, Edit, Application, Imager
-from .utils import timeout
-from ..device.client import O2x5xxPCICDevice
-from ..static.devices import DevicesMeta
 
 
 class O2x5xxRPCDevice(object):
     """
     Main API class
     """
-    def __init__(self, address="192.168.0.69", api_path="/api/rpc/v1/"):
+    def __init__(self, address="192.168.0.69", api_path="/api/rpc/v1/", timeout=SOCKET_TIMEOUT):
         self.address = address
         self.api_path = api_path
+        self.timeout = timeout
         self.baseURL = "http://" + self.address + self.api_path
         self.mainURL = self.baseURL + "com.ifm.efector/"
-        self.mainProxy = MainProxy(url=self.mainURL, device=self)
+        self.mainProxy = MainProxy(url=self.mainURL, timeout=self.timeout, device=self)
         self.tcpIpPort = int(self.getParameter("PcicTcpPort"))
         self.deviceMeta = self._getDeviceMeta()
+        self._session = None
 
     def __enter__(self):
         return self
@@ -52,12 +57,12 @@ class O2x5xxRPCDevice(object):
     @property
     def session(self) -> Session:
         if self.sessionProxy:
-            return getattr(self, "_session")
+            return Session(sessionProxy=self.sessionProxy, device=self)
 
     @property
     def edit(self) -> Edit:
         if self.editProxy:
-            return getattr(self, "_edit")
+            return Edit(editProxy=self.editProxy,  device=self)
         else:
             raise AttributeError("No editProxy available! Please first create an editProxy "
                                  "with method self.device.session.requestOperatingMode(Mode=1) before using Edit!")
@@ -65,12 +70,12 @@ class O2x5xxRPCDevice(object):
     @property
     def application(self) -> Application:
         if self.applicationProxy:
-            return getattr(self, "_application")
+            return Application(applicationProxy=self.applicationProxy, device=self)
 
     @property
     def imager(self) -> Imager:
         if self.imagerProxy:
-            return getattr(self, "_imager")
+            return Imager(imagerProxy=self.imagerProxy, device=self)
 
     def _getDeviceMeta(self):
         _deviceType = self.getParameter(value="DeviceType")
@@ -197,7 +202,7 @@ class O2x5xxRPCDevice(object):
         :param applicationIndex: (int) Index of application (Range 1-32)
         :return: (dict)
         """
-        result = eval(self.mainProxy.getApplicationStatisticData(applicationIndex))
+        result = json.loads(self.mainProxy.getApplicationStatisticData(applicationIndex))
         return result
 
     def getReferenceImage(self) -> np.ndarray:
@@ -239,7 +244,7 @@ class O2x5xxRPCDevice(object):
         :return: (dict) measure result
         """
         input_stringified = json.dumps(measureInput)
-        result = eval(self.mainProxy.measure(input_stringified))
+        result = json.loads(self.mainProxy.measure(input_stringified))
         return result
 
     def trigger(self) -> str:
@@ -271,3 +276,32 @@ class O2x5xxRPCDevice(object):
         """
         result = self.mainProxy.doPing()
         return result
+
+    def requestSession(self, password='', session_id='0' * 32) -> Session:
+        """
+        Request a session-object for access to the configuration and for changing device operating-mode.
+        This should block parallel editing and allows to put editing behind password.
+        The ID could optionally be defined from the external system, but it must be the defined format (32char "hex").
+        If it is called with only one parameter, the device will generate a SessionID.
+
+        :param password: (str) session password (optional)
+        :param session_id: (str) session ID (optional)
+        :return: Session object
+        """
+        _sessionId = self.__getattr__('requestSession')(password, session_id)
+        setattr(self, "_sessionId", _sessionId)
+        _sessionURL = self.mainURL + 'session_' + _sessionId + '/'
+        setattr(self, "_sessionURL", _sessionURL)
+        _sessionProxy = SessionProxy(url=_sessionURL, device=self)
+        setattr(self, "_sessionProxy", _sessionProxy)
+        return self.session
+
+    def __getattr__(self, name):
+        """Pass given name to the actual xmlrpc.client.ServerProxy.
+
+        Args:
+            name (str): name of attribute
+        Returns:
+            Attribute of xmlrpc.client.ServerProxy
+        """
+        return self.mainProxy.__getattr__(name)

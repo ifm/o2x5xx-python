@@ -338,28 +338,32 @@ class Imager(object):
         self._device.waitForConfigurationDone()
 
     def startCalculateExposureTime(self, minAnalogGainFactor: int = None, maxAnalogGainFactor: int = None,
-                                   saturatedRatio: [float, list] = None, ROIs: list = None, RODs: list = None) -> None:
+                                   saturatedRatio: float = None, ROIs: list = None, RODs: list = None) -> None:
         """
         Starting calculation "auto exposure time" with analog gain factor, saturation ratio and ROI/ROD-definition.
 
         :param minAnalogGainFactor: Min. Analog Gain Factor upper limit. Possible values: 1, 2, 4 or 8
         :param maxAnalogGainFactor: Max. Analog Gain Factor upper limit. Possible values: 1, 2, 4 or 8
-        :param saturatedRatio: (float/array) maximum acceptable ratio of saturated pixels
+        :param saturatedRatio: (float/array) maximum acceptable ratio of saturated pixels. Possible range: [0.0, 1.0]
         :param ROIs: Auto-Exposure is calculated on these set of ROIs
         :param RODs: RODs are subtracted from the ROI union set
         :return: None
         """
         inputAutoExposure = {}
         if minAnalogGainFactor:
-            inputAutoExposure.update({"minAnalogGainFactor": minAnalogGainFactor})
+            inputAutoExposure["minAnalogGainFactor"] = minAnalogGainFactor
         if maxAnalogGainFactor:
-            inputAutoExposure.update({"maxAnalogGainFactor": maxAnalogGainFactor})
+            inputAutoExposure["maxAnalogGainFactor"] = maxAnalogGainFactor
         if saturatedRatio:
-            inputAutoExposure.update({"saturatedRatio": saturatedRatio})
+            inputAutoExposure["saturatedRatio"] = saturatedRatio
         if ROIs:
-            inputAutoExposure.update({"ROIs": ROIs})
+            inputAutoExposure["ROIs"] = ROIs
+        if RODs and not ROIs:
+            defaultROIsZone = [{"id": 0, "group": 0, "type": "Rect", "width": 1280,
+                               "height": 960, "angle": 0, "center_x": 640, "center_y": 480}]
+            inputAutoExposure["ROIs"] = defaultROIsZone
         if RODs:
-            inputAutoExposure.update({"RODs": RODs})
+            inputAutoExposure["RODs"] = RODs
         self._imagerProxy.startCalculateExposureTime(json.dumps(inputAutoExposure))
         while self.getProgressCalculateExposureTime() < 1.0:
             time.sleep(1)
@@ -374,16 +378,23 @@ class Imager(object):
         result = self._imagerProxy.getProgressCalculateExposureTime()
         return result
 
-    def startCalculateAutofocus(self) -> None:
+    def startCalculateAutofocus(self, ROIs: list = None, RODs: list = None) -> None:
         """
         Starting "autofocus" calculation with ROI-definition.
         The autofocus will be optimized for the center of the image (HWROI).
 
         :return: None
         """
-        # This is required due to the long autofocus progress which may take longer than 10 seconds (default)
-        # self._device.sessionProxy.heartbeat(heartbeatInterval=300)
-        self._imagerProxy.startCalculateAutofocus()
+        inputAutoFocus = {}
+        if ROIs:
+            inputAutoFocus["ROIs"] = ROIs
+        if RODs and not ROIs:
+            defaultROIsZone = [{"id": 0, "group": 0, "type": "Rect", "width": 1280,
+                               "height": 960, "angle": 0, "center_x": 640, "center_y": 480}]
+            inputAutoFocus["ROIs"] = defaultROIsZone
+        if RODs:
+            inputAutoFocus["RODs"] = RODs
+        self._imagerProxy.startCalculateAutofocus(json.dumps(inputAutoFocus))
         while self.getProgressCalculateAutofocus() < 1.0:
             time.sleep(1)
 
@@ -431,3 +442,13 @@ class Imager(object):
         if result:
             data = json.loads(result)
             return data
+
+    def __getattr__(self, name):
+        """Pass given name to the actual xmlrpc.client.ServerProxy.
+
+        Args:
+            name (str): name of attribute
+        Returns:
+            Attribute of xmlrpc.client.ServerProxy
+        """
+        return self._editProxy.__getattr__(name)
