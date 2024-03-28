@@ -58,13 +58,11 @@ class O2x5xxRPCDevice(object):
     def session(self) -> Session:
         if self.sessionProxy:
             return Session(sessionProxy=self.sessionProxy, device=self)
-            # return getattr(self, "_session")
 
     @property
     def edit(self) -> Edit:
         if self.editProxy:
             return Edit(editProxy=self.editProxy,  device=self)
-            # return getattr(self, "_edit")
         else:
             raise AttributeError("No editProxy available! Please first create an editProxy "
                                  "with method self.device.session.requestOperatingMode(Mode=1) before using Edit!")
@@ -73,13 +71,11 @@ class O2x5xxRPCDevice(object):
     def application(self) -> Application:
         if self.applicationProxy:
             return Application(applicationProxy=self.applicationProxy, device=self)
-        # return getattr(self, "_application")
 
     @property
     def imager(self) -> Imager:
         if self.imagerProxy:
             return Imager(imagerProxy=self.imagerProxy, device=self)
-            # return getattr(self, "_imager")
 
     def _getDeviceMeta(self):
         _deviceType = self.getParameter(value="DeviceType")
