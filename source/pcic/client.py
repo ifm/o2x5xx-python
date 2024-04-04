@@ -1,5 +1,4 @@
 from ..static.formats import error_codes, serialization_format
-from .utils import socket_exception_handler
 import matplotlib.image as mpimg
 import binascii
 import socket
@@ -18,7 +17,7 @@ class Client(object):
         self.address = address
         self.port = port
         self.autoconnect = autoconnect
-        self.timeout = timeout
+        self._timeout = timeout
         self.pcicSocket = None
         self.connected = False
         if self.autoconnect:
@@ -27,7 +26,6 @@ class Client(object):
         self.debug = False
         self.debugFull = False
 
-    @socket_exception_handler(timeout=SOCKET_TIMEOUT)
     def connect(self):
         """
         Open the socket session with the device.
@@ -35,10 +33,34 @@ class Client(object):
         :return: None
         """
         if not self.connected:
-            self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.pcicSocket.settimeout(self.timeout)
-            self.pcicSocket.connect((self.address, self.port))
+            self.pcicSocket = socket.create_connection((self.address, self.port), timeout=self.timeout)
             self.connected = True
+
+    @property
+    def timeout(self):
+        """
+        Get the current timeout value on blocking socket operations. If no socket instance available
+        the preset timeout value will be returned.
+
+        :return: (float) socket timeout in seconds
+        """
+        if self.pcicSocket:
+            return self.pcicSocket.gettimeout()
+        return self._timeout
+
+    @timeout.setter
+    def timeout(self, value):
+        """
+        Set a timeout on blocking socket operations. If a non-zero value is given, subsequent socket operations will
+        raise a timeout exception if the timeout period value has elapsed before the operation has completed.
+        If zero is given, the socket is put in non-blocking mode. If None is given, the socket is put in blocking mode.
+
+        :param value: (float) non-negative socket timeout in seconds
+        :return: None
+        """
+        self._timeout = value
+        if self.pcicSocket:
+            self.pcicSocket.settimeout(self._timeout)
 
     def disconnect(self):
         """
@@ -80,27 +102,6 @@ class Client(object):
             total_recved += len(chunk)
             fragments.append(chunk)
         return b''.join(fragments)
-
-    @property
-    def pcic_socket_timeout(self) -> float:
-        """
-		Getter for timeout value of lowlevel connection socket.
-
-		:return: (float) socket timeout in seconds
-		"""
-        return self.timeout
-
-    @pcic_socket_timeout.setter
-    def pcic_socket_timeout(self, value: float) -> None:
-        """
-        Setter for timeout value of lowlevel connection socket.
-
-        :param value: (float) in seconds.
-        :return: None
-        """
-        if self.pcicSocket:
-            self.pcicSocket.settimeout(value)
-        self.timeout = value
 
 
 class PCICV3Client(Client):
@@ -154,7 +155,7 @@ class O2x5xxPCICDevice(PCICV3Client):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.disconnect()
+        self.close()
 
     def activate_application(self, application_number: [str, int]) -> str:
         """
@@ -241,6 +242,7 @@ class O2x5xxPCICDevice(PCICV3Client):
         """
         result = self.send_command('C?')
         result = result.decode()
+
         return result
 
     def request_current_error_state(self):
@@ -493,27 +495,6 @@ class O2x5xxPCICDevice(PCICV3Client):
         result = self.send_command('o{io_id}{state}'.format(io_id=io_id, state=str(state)))
         result = result.decode()
         return result
-
-    # def set_logic_state_of_an_id2(self, io_id, state):
-    #     """
-    #     This is a reST style.
-    #
-    #     :param io_id : (int)
-    #     2 digits for digital output
-    #         * "01": IO1
-    #         * "02": IO2
-    #     :param state : (str)
-    #     this is a second param
-    #         * "01": IO1
-    #         * "02": IO2
-    #     :returns: this is a description of what is returned
-    #     :raises keyError: raises an exception
-    #     """
-    #     if str(io_id).isnumeric():
-    #         io_id = str(io_id).zfill(2)
-    #     result = self.send_command('o{io_id}{state}'.format(io_id=io_id, state=str(state)))
-    #     result = result.decode()
-    #     return result
 
     def request_state_of_an_id(self, io_id):
         """

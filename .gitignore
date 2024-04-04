@@ -16,3 +16,7 @@
 
 # Cache data unittests
 /.pytest_cache
+/.coverage
+
+# proto folders/scripts
+/examples_development

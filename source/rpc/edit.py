@@ -1,3 +1,6 @@
+from .proxy import ApplicationProxy
+
+
 class Edit(object):
     """
     Edit object
@@ -6,6 +9,19 @@ class Edit(object):
     def __init__(self, editProxy, device):
         self._editProxy = editProxy
         self._device = device
+
+    def editApplication(self, app_index):
+        """Generator for editApplication to be used in with statement.
+
+        Args:
+            app_index (int): application index
+        """
+        self._editProxy.proxy.editApplication(app_index)
+        _applicationURL = self._editProxy.baseURL + "application/"
+        setattr(self._device, "_applicationURL", _applicationURL)
+        _applicationProxy = ApplicationProxy(url=_applicationURL, device=self._device)
+        setattr(self._device, "_applicationProxy", _applicationProxy)
+        return self._device.application
 
     def createApplication(self, deviceType="WithModels") -> int:
         """
@@ -16,7 +32,7 @@ class Edit(object):
         """
         if deviceType not in ["Camera", "WithModels"]:
             raise AttributeError("Device type must be either value \"Camera\" or \"WithModels\"!")
-        appIndex = self._editProxy.createApplication(deviceType)
+        appIndex = self._editProxy.proxy.createApplication(deviceType)
         return appIndex
 
     def copyApplication(self, applicationIndex: int) -> int:
@@ -27,7 +43,7 @@ class Edit(object):
         :param applicationIndex: (int) Index of application which should be copied
         :return: (int) Index of new application
         """
-        appIndex = self._editProxy.copyApplication(applicationIndex)
+        appIndex = self._editProxy.proxy.copyApplication(applicationIndex)
         return appIndex
 
     def deleteApplication(self, applicationIndex: int) -> None:
@@ -38,7 +54,7 @@ class Edit(object):
         :param applicationIndex: (int) application index
         :return: None
         """
-        self._editProxy.deleteApplication(applicationIndex)
+        self._editProxy.proxy.deleteApplication(applicationIndex)
 
     def changeNameAndDescription(self, applicationIndex: int, name: str = "", description: str = "") -> None:
         """
@@ -55,7 +71,7 @@ class Edit(object):
         max_chars = 500
         if description.__len__() > 500:
             raise ValueError("Max. {} characters for description".format(max_chars))
-        self._editProxy.changeNameAndDescription(applicationIndex, name, description)
+        self._editProxy.proxy.changeNameAndDescription(applicationIndex, name, description)
 
     def moveApplications(self, applicationIndexFrom: int, applicationIndexTo: int) -> None:
         """
@@ -65,10 +81,10 @@ class Edit(object):
         :param applicationIndexTo: (int) desired application id in application list
         :return: None
         """
-        app_list = self._device.mainProxy.getApplicationList()
+        app_list = self._device.getApplicationList()
         move_list = []
         for app in app_list:
             if int(app["Index"]) == int(applicationIndexFrom):
                 app["Index"] = int(applicationIndexTo)
             move_list.append({'Id': app['Id'], 'Index': app['Index']})
-        self._editProxy.moveApplications(move_list)
+        self._editProxy.proxy.moveApplications(move_list)

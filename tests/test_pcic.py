@@ -1,4 +1,5 @@
 import ast
+import socket
 import time
 from unittest import TestCase
 from source import O2x5xxPCICDevice
@@ -12,30 +13,33 @@ class TestPCIC(TestCase):
     pcic = None
     rpc = None
     session = None
+    config_file = None
     config_backup = None
     active_application_backup = None
     pin_layout = None
 
     @classmethod
-    def setUpClass(cls):
-        with O2x5xxRPCDevice(deviceAddress) as cls.rpc:
-            with cls.rpc.mainProxy.requestSession():
-                cls.config_backup = cls.rpc.session.exportConfig()
-                cls.active_application_backup = cls.rpc.getParameter("ActiveApplication")
-                configFile = getImportSetupByPinLayout(rpc=cls.rpc)['config_file']
-                configFile = cls.rpc.session.readDeviceConfigFile(configFile=configFile)
-                cls.rpc.session.importConfig(configFile, global_settings=True, network_settings=False,
+    def setUpClass(cls) -> None:
+        with O2x5xxRPCDevice(deviceAddress) as rpc:
+            cls.config_file = getImportSetupByPinLayout(rpc=rpc)['config_file']
+            cls.app_import_file = getImportSetupByPinLayout(rpc=rpc)['app_import_file']
+            if importDeviceConfigUnittests:
+                cls.active_application_backup = rpc.getParameter("ActiveApplication")
+                with rpc.mainProxy.requestSession():
+                    cls.config_backup = rpc.session.exportConfig()
+                    _configFile = rpc.session.readDeviceConfigFile(configFile=cls.config_file)
+                    rpc.session.importConfig(_configFile, global_settings=True, network_settings=False,
                                              applications=True)
-                cls.rpc.switchApplication(1)
 
     @classmethod
-    def tearDownClass(cls):
-        with O2x5xxRPCDevice(deviceAddress) as cls.rpc:
-            with cls.rpc.mainProxy.requestSession():
-                cls.rpc.session.importConfig(cls.config_backup, global_settings=True, network_settings=False,
+    def tearDownClass(cls) -> None:
+        if importDeviceConfigUnittests:
+            with O2x5xxRPCDevice(deviceAddress) as rpc:
+                with rpc.mainProxy.requestSession():
+                    rpc.session.importConfig(cls.config_backup, global_settings=True, network_settings=False,
                                              applications=True)
-                if cls.active_application_backup != "0":
-                    cls.rpc.switchApplication(cls.active_application_backup)
+                    if cls.active_application_backup != "0":
+                        rpc.switchApplication(cls.active_application_backup)
 
     def setUp(self):
         with O2x5xxPCICDevice(deviceAddress, pcicTcpPort) as pcic:
@@ -44,6 +48,42 @@ class TestPCIC(TestCase):
 
     def tearDown(self):
         pass
+
+    def test_PCIC_client_timeout_property_and_autoconnect_true(self):
+        timeout_values = [2, 6, 3, 9, 5, 7]
+        with O2x5xxPCICDevice(deviceAddress, pcicTcpPort, autoconnect=True) as pcic:
+            for _, x in enumerate(timeout_values):
+                pcic.timeout = x
+                self.assertEqual(pcic.timeout, x)
+
+    def test_PCIC_client_timeout_property_and_autoconnect_false(self):
+        timeout_values = [2, 6, 3, 9, 5, 7]
+        with O2x5xxPCICDevice(deviceAddress, pcicTcpPort, autoconnect=False) as pcic:
+            pcic.connect()
+            for _, x in enumerate(timeout_values):
+                pcic.timeout = x
+                self.assertEqual(pcic.timeout, x)
+
+    def test_PCIC_client_connect_timeout_with_wrong_ip_and_autoconnect_false(self):
+        TIMEOUT_VALUE = 2
+        start_time = time.time()
+        with O2x5xxPCICDevice("192.168.0.5", pcicTcpPort, autoconnect=False, timeout=TIMEOUT_VALUE) as pcic:
+            self.assertEqual(pcic.timeout, TIMEOUT_VALUE)
+            with self.assertRaises(socket.timeout):
+                pcic.connect()
+        end_time = time.time()
+        duration_secs = end_time - start_time
+        self.assertLess(duration_secs, TIMEOUT_VALUE+1)
+
+    def test_PCIC_client_connect_timeout_with_wrong_ip_and_autoconnect_true(self):
+        TIMEOUT_VALUE = 2
+        start_time = time.time()
+        with self.assertRaises(socket.timeout):
+            with O2x5xxPCICDevice("192.168.0.5", pcicTcpPort, autoconnect=True, timeout=TIMEOUT_VALUE) as pcic:
+                pcic.occupancy_of_application_list()
+        end_time = time.time()
+        duration_secs = end_time - start_time
+        self.assertLess(duration_secs, TIMEOUT_VALUE+1)
 
     def test_PCIC_client_with_multiple_connects(self):
         iterations = 100
@@ -64,7 +104,7 @@ class TestPCIC(TestCase):
         self.assertNotEqual(result, "?")
         self.assertTrue(result.count('\t') >= 6)
         self.assertEqual(result, '006\t01\t01\t02\t03\t04\t05\t06')
-        device.disconnect()
+        device.close()
 
     def test_PCIC_client_without_context_manager_with_autoconnect_True(self):
         device = O2x5xxPCICDevice(deviceAddress, pcicTcpPort, autoconnect=True)
@@ -196,7 +236,7 @@ class TestPCIC(TestCase):
     def test_request_last_image_taken(self):
         with O2x5xxPCICDevice(deviceAddress, pcicTcpPort) as pcic:
             result = pcic.request_last_image_taken(1)
-            self.assertIsInstance(result, bytearray)
+            self.assertIsInstance(result, bytes)
             self.assertTrue(len(result) > 1000)
 
     def test_request_multiple_images_taken(self):
@@ -206,7 +246,7 @@ class TestPCIC(TestCase):
             result = pcic.execute_asynchronous_trigger()
             self.assertEqual(result, "*")
             result = pcic.request_last_image_taken(1)
-            self.assertIsInstance(result, bytearray)
+            self.assertIsInstance(result, bytes)
             self.assertTrue(len(result) > 10000)
 
     def test_request_multiple_images_taken_deserialized(self):
@@ -295,7 +335,7 @@ class TestPCIC(TestCase):
             result = pcic.turn_process_interface_output_on_or_off(7)
             self.assertEqual(result, "*")
             ticket, answer = pcic.read_next_answer()
-            self.assertIsInstance(answer, bytearray)
+            self.assertIsInstance(answer, bytes)
             result = pcic.turn_process_interface_output_on_or_off(0)
             self.assertEqual(result, "*")
 
@@ -338,3 +378,28 @@ class TestPCIC(TestCase):
                 self.assertEqual(result, "*")
                 result = pcic.request_current_protocol_version()
                 self.assertEqual(result, "0{} 01 02 03".format(str(initialPCICVersion)))
+
+    def test_timeout(self):
+        TIMEOUT_VALUES = range(1, 5)
+
+        # Passing timeout value to constructor
+        for timeout_value in TIMEOUT_VALUES:
+            with O2x5xxPCICDevice(deviceAddress, pcicTcpPort, timeout=timeout_value) as pcic:
+                self.assertEqual(pcic.timeout, timeout_value)
+
+        # Passing timeout value to constructor with autoconnect = False
+        for timeout_value in TIMEOUT_VALUES:
+            with O2x5xxPCICDevice(deviceAddress, pcicTcpPort, timeout=timeout_value, autoconnect=False) as pcic:
+                self.assertEqual(pcic.timeout, timeout_value)
+
+        # Passing timeout value to property
+        for timeout_value in TIMEOUT_VALUES:
+            with O2x5xxPCICDevice(deviceAddress, pcicTcpPort) as pcic:
+                pcic.timeout = timeout_value
+                self.assertEqual(pcic.timeout, timeout_value)
+
+        # Passing timeout value to property with autoconnect = False
+        for timeout_value in TIMEOUT_VALUES:
+            with O2x5xxPCICDevice(deviceAddress, pcicTcpPort, autoconnect=False) as pcic:
+                pcic.timeout = timeout_value
+                self.assertEqual(pcic.timeout, timeout_value)

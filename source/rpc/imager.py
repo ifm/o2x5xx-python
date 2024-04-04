@@ -31,7 +31,7 @@ class Imager(object):
 
         :return: (dict) name contains parameter-name, value the stringified parameter-value
         """
-        result = self._imagerProxy.getAllParameters()
+        result = self._imagerProxy.proxy.getAllParameters()
         return result
 
     def getParameter(self, value):
@@ -41,7 +41,7 @@ class Imager(object):
         :param value: (str) parameter name
         :return: (str)
         """
-        result = self._imagerProxy.getParameter(value)
+        result = self._imagerProxy.proxy.getParameter(value)
         return result
 
     def getAllParameterLimits(self):
@@ -52,7 +52,7 @@ class Imager(object):
 
         :return: (dict)
         """
-        result = self._imagerProxy.getAllParameterLimits()
+        result = self._imagerProxy.proxy.getAllParameterLimits()
         return result
 
     @property
@@ -85,7 +85,7 @@ class Imager(object):
         max_chars = 64
         if value.__len__() > max_chars:
             raise ValueError("Max. {} characters".format(max_chars))
-        self._imagerProxy.setParameter("Name", value)
+        self._imagerProxy.proxy.setParameter("Name", value)
         self._device.waitForConfigurationDone()
 
     @property
@@ -118,7 +118,7 @@ class Imager(object):
         if value not in range(int(limits["min"]), int(limits["max"]), 1):
             raise ValueError("Illumination value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["Illumination"]))
-        self._imagerProxy.setParameter("Illumination", value)
+        self._imagerProxy.proxy.setParameter("Illumination", value)
         self._device.waitForConfigurationDone()
 
     @property
@@ -159,7 +159,7 @@ class Imager(object):
         value += inputDict["upper-right"] * 0x02
         value += inputDict["lower-left"] * 0x04
         value += inputDict["lower-right"] * 0x08
-        self._imagerProxy.setParameter("IlluInternalSegments", value)
+        self._imagerProxy.proxy.setParameter("IlluInternalSegments", value)
         self._device.waitForConfigurationDone()
 
     @property
@@ -196,7 +196,7 @@ class Imager(object):
             if not int(limits["min"]) <= value <= int(limits["max"]):
                 raise ValueError("Color value not available. Available range: {}"
                                  .format(self.getAllParameterLimits()["Color"]))
-            self._imagerProxy.setParameter("Color", value)
+            self._imagerProxy.proxy.setParameter("Color", value)
         else:
             articleNumber = self._device.getParameter(value="ArticleNumber")
             raise TypeError("Color attribute not available for sensor {}.".format(articleNumber))
@@ -224,7 +224,7 @@ class Imager(object):
         if not int(limits["min"]) <= int(value) <= int(limits["max"]):
             raise ValueError("ExposureTime value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["ExposureTime"]))
-        self._imagerProxy.setParameter("ExposureTime", value)
+        self._imagerProxy.proxy.setParameter("ExposureTime", value)
         self._device.waitForConfigurationDone()
 
     @property
@@ -249,7 +249,7 @@ class Imager(object):
         if str(value) not in limits["values"]:
             raise ValueError("AnalogGainFactor value not available. Available values: {}"
                              .format(self.getAllParameterLimits()["AnalogGainFactor"]))
-        self._imagerProxy.setParameter("AnalogGainFactor", value)
+        self._imagerProxy.proxy.setParameter("AnalogGainFactor", value)
         self._device.waitForConfigurationDone()
 
     @property
@@ -284,7 +284,7 @@ class Imager(object):
         if not int(limits["min"]) <= int(value) <= int(limits["max"]):
             raise ValueError("FilterType value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["FilterType"]))
-        self._imagerProxy.setParameter("FilterType", value)
+        self._imagerProxy.proxy.setParameter("FilterType", value)
         self._device.waitForConfigurationDone()
 
     @property
@@ -311,7 +311,7 @@ class Imager(object):
         if not int(limits["min"]) <= int(value) <= int(limits["max"]):
             raise ValueError("FilterStrength value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["FilterStrength"]))
-        self._imagerProxy.setParameter("FilterStrength", value)
+        self._imagerProxy.proxy.setParameter("FilterStrength", value)
         self._device.waitForConfigurationDone()
 
     @property
@@ -321,7 +321,7 @@ class Imager(object):
 
         :return: (bool) True or False
         """
-        result = self._imagerProxy.getParameter("FilterInvert")
+        result = self._imagerProxy.proxy.getParameter("FilterInvert")
         if result == "false":
             return False
         return True
@@ -334,33 +334,37 @@ class Imager(object):
         :param value: (bool) True or False
         :return: None
         """
-        self._imagerProxy.setParameter("FilterInvert", value)
+        self._imagerProxy.proxy.setParameter("FilterInvert", value)
         self._device.waitForConfigurationDone()
 
     def startCalculateExposureTime(self, minAnalogGainFactor: int = None, maxAnalogGainFactor: int = None,
-                                   saturatedRatio: [float, list] = None, ROIs: list = None, RODs: list = None) -> None:
+                                   saturatedRatio: float = None, ROIs: list = None, RODs: list = None) -> None:
         """
         Starting calculation "auto exposure time" with analog gain factor, saturation ratio and ROI/ROD-definition.
 
         :param minAnalogGainFactor: Min. Analog Gain Factor upper limit. Possible values: 1, 2, 4 or 8
         :param maxAnalogGainFactor: Max. Analog Gain Factor upper limit. Possible values: 1, 2, 4 or 8
-        :param saturatedRatio: (float/array) maximum acceptable ratio of saturated pixels
+        :param saturatedRatio: (float/array) maximum acceptable ratio of saturated pixels. Possible range: [0.0, 1.0]
         :param ROIs: Auto-Exposure is calculated on these set of ROIs
         :param RODs: RODs are subtracted from the ROI union set
         :return: None
         """
         inputAutoExposure = {}
         if minAnalogGainFactor:
-            inputAutoExposure.update({"minAnalogGainFactor": minAnalogGainFactor})
+            inputAutoExposure["minAnalogGainFactor"] = minAnalogGainFactor
         if maxAnalogGainFactor:
-            inputAutoExposure.update({"maxAnalogGainFactor": maxAnalogGainFactor})
+            inputAutoExposure["maxAnalogGainFactor"] = maxAnalogGainFactor
         if saturatedRatio:
-            inputAutoExposure.update({"saturatedRatio": saturatedRatio})
+            inputAutoExposure["saturatedRatio"] = saturatedRatio
         if ROIs:
-            inputAutoExposure.update({"ROIs": ROIs})
+            inputAutoExposure["ROIs"] = ROIs
+        if RODs and not ROIs:
+            defaultROIsZone = [{"id": 0, "group": 0, "type": "Rect", "width": 1280,
+                               "height": 960, "angle": 0, "center_x": 640, "center_y": 480}]
+            inputAutoExposure["ROIs"] = defaultROIsZone
         if RODs:
-            inputAutoExposure.update({"RODs": RODs})
-        self._imagerProxy.startCalculateExposureTime(json.dumps(inputAutoExposure))
+            inputAutoExposure["RODs"] = RODs
+        self._imagerProxy.proxy.startCalculateExposureTime(json.dumps(inputAutoExposure))
         while self.getProgressCalculateExposureTime() < 1.0:
             time.sleep(1)
 
@@ -371,19 +375,26 @@ class Imager(object):
 
         :return: (float) progress (0.0 to 1.0)
         """
-        result = self._imagerProxy.getProgressCalculateExposureTime()
+        result = self._imagerProxy.proxy.getProgressCalculateExposureTime()
         return result
 
-    def startCalculateAutofocus(self) -> None:
+    def startCalculateAutofocus(self, ROIs: list = None, RODs: list = None) -> None:
         """
         Starting "autofocus" calculation with ROI-definition.
         The autofocus will be optimized for the center of the image (HWROI).
 
         :return: None
         """
-        # This is required due to the long autofocus progress which may take longer than 10 seconds (default)
-        # self._device.sessionProxy.heartbeat(heartbeatInterval=300)
-        self._imagerProxy.startCalculateAutofocus()
+        inputAutoFocus = {}
+        if ROIs:
+            inputAutoFocus["ROIs"] = ROIs
+        if RODs and not ROIs:
+            defaultROIsZone = [{"id": 0, "group": 0, "type": "Rect", "width": 1280,
+                               "height": 960, "angle": 0, "center_x": 640, "center_y": 480}]
+            inputAutoFocus["ROIs"] = defaultROIsZone
+        if RODs:
+            inputAutoFocus["RODs"] = RODs
+        self._imagerProxy.proxy.startCalculateAutofocus(json.dumps(inputAutoFocus))
         while self.getProgressCalculateAutofocus() < 1.0:
             time.sleep(1)
 
@@ -395,7 +406,7 @@ class Imager(object):
 
         :return: None
         """
-        self._imagerProxy.stopCalculateAutofocus()
+        self._imagerProxy.proxy.stopCalculateAutofocus()
 
     def getProgressCalculateAutofocus(self) -> float:
         """
@@ -404,7 +415,7 @@ class Imager(object):
 
         :return: (float) progress (0.0 to 1.0)
         """
-        result = self._imagerProxy.getProgressCalculateAutofocus()
+        result = self._imagerProxy.proxy.getProgressCalculateAutofocus()
         return result
 
     def getAutofocusDistances(self) -> list:
@@ -413,7 +424,7 @@ class Imager(object):
 
         :return: a list of floating point values, separated by comma
         """
-        result = self._imagerProxy.getAutofocusDistances()
+        result = self._imagerProxy.proxy.getAutofocusDistances()
         if result:
             if "," not in result:
                 return [float(result)]
@@ -427,7 +438,7 @@ class Imager(object):
 
         :return: (dict) json with algo run result as a string
         """
-        result = self._imagerProxy.getAutoExposureResult()
+        result = self._imagerProxy.proxy.getAutoExposureResult()
         if result:
             data = json.loads(result)
             return data

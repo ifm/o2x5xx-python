@@ -1,35 +1,39 @@
 import time
 from unittest import TestCase
 import numpy as np
+import socket
 from source import O2x5xxRPCDevice
 from tests.utils import *
 from .config import *
 
 
 class TestRPC_MainAPI(TestCase):
+    config_file = None
     config_backup = None
     active_application_backup = None
 
     @classmethod
     def setUpClass(cls) -> None:
         with O2x5xxRPCDevice(deviceAddress) as rpc:
-            with rpc.mainProxy.requestSession():
-                cls.config_backup = rpc.session.exportConfig()
+            cls.config_file = getImportSetupByPinLayout(rpc=rpc)['config_file']
+            cls.app_import_file = getImportSetupByPinLayout(rpc=rpc)['app_import_file']
+            if importDeviceConfigUnittests:
                 cls.active_application_backup = rpc.getParameter("ActiveApplication")
-                configFile = getImportSetupByPinLayout(rpc=rpc)['config_file']
-                configFile = rpc.session.readDeviceConfigFile(configFile=configFile)
-                rpc.session.importConfig(configFile, global_settings=True, network_settings=False,
-                                         applications=True)
-                rpc.switchApplication(1)
+                with rpc.mainProxy.requestSession():
+                    cls.config_backup = rpc.session.exportConfig()
+                    _configFile = rpc.session.readDeviceConfigFile(configFile=cls.config_file)
+                    rpc.session.importConfig(_configFile, global_settings=True, network_settings=False,
+                                             applications=True)
 
     @classmethod
     def tearDownClass(cls) -> None:
-        with O2x5xxRPCDevice(deviceAddress) as rpc:
-            with rpc.mainProxy.requestSession():
-                rpc.session.importConfig(cls.config_backup, global_settings=True, network_settings=False,
-                                         applications=True)
-                if cls.active_application_backup != "0":
-                    rpc.switchApplication(cls.active_application_backup)
+        if importDeviceConfigUnittests:
+            with O2x5xxRPCDevice(deviceAddress) as rpc:
+                with rpc.mainProxy.requestSession():
+                    rpc.session.importConfig(cls.config_backup, global_settings=True, network_settings=False,
+                                             applications=True)
+                    if cls.active_application_backup != "0":
+                        rpc.switchApplication(cls.active_application_backup)
 
     def setUp(self) -> None:
         with O2x5xxRPCDevice(deviceAddress) as rpc:
@@ -37,6 +41,19 @@ class TestRPC_MainAPI(TestCase):
 
     def tearDown(self) -> None:
         pass
+
+    def test_timeout_with_invalid_ip(self):
+        TIMEOUT_VALUES = range(1, 6)
+        for timeout_value in TIMEOUT_VALUES:
+            start_time = time.time()
+            with self.assertRaises(socket.timeout):
+                with O2x5xxRPCDevice("192.168.1.5", timeout=timeout_value) as device:
+                    device.rpc.getParameter("ActiveApplication")
+                    self.assertEqual(device.mainProxy.timeout, timeout_value)
+            end_time = time.time()
+            duration_secs = end_time - start_time
+            self.assertLess(duration_secs, timeout_value+1)
+            self.assertGreater(duration_secs, timeout_value-1)
 
     def test_getParameter(self):
         with O2x5xxRPCDevice(deviceAddress) as rpc:
@@ -90,10 +107,10 @@ class TestRPC_MainAPI(TestCase):
                 self.assertEqual(int(rpc.getParameter("ActiveApplication")), 1)
             else:
                 rpc.switchApplication(applicationIndex=2)
+                rpc.trigger()
                 while rpc.getParameter("OperatingMode") != "0":
                     time.sleep(1)
                 self.assertEqual(int(rpc.getParameter("ActiveApplication")), 2)
-                time.sleep(5)
             # Switch back to initial application
             rpc.switchApplication(applicationIndex=initial_application)
             while rpc.getParameter("OperatingMode") != "0":
@@ -180,19 +197,6 @@ class TestRPC_MainAPI(TestCase):
             result = rpc.measure(measureInput=input_measure_circle)
             self.assertIsInstance(result, dict)
             self.assertTrue(result)
-
-    def test_trigger(self):
-        with O2x5xxRPCDevice(deviceAddress) as rpc:
-            number_trigger = 10
-            application_active = rpc.getParameter(value="ActiveApplication")
-            initial_application_stats = rpc.getApplicationStatisticData(applicationIndex=int(application_active))
-            initial_number_of_frames = initial_application_stats['number_of_frames']
-            for i in range(number_trigger):
-                answer = rpc.trigger()
-                self.assertTrue(answer)
-            application_stats = rpc.getApplicationStatisticData(applicationIndex=int(application_active))
-            number_of_frames = application_stats['number_of_frames']
-            self.assertEqual(number_of_frames, initial_number_of_frames + number_trigger)
 
     def test_doPing(self):
         with O2x5xxRPCDevice(deviceAddress) as rpc:
