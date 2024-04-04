@@ -39,7 +39,7 @@ class Application(object):
 
         :return: (dict) name contains parameter-name, value the stringified parameter-value
         """
-        result = self._applicationProxy.getAllParameters()
+        result = self._applicationProxy.proxy.getAllParameters()
         return result
 
     def getParameter(self, value):
@@ -49,7 +49,7 @@ class Application(object):
         :param value: (str) parameter name
         :return: (str)
         """
-        result = self._applicationProxy.getParameter(value)
+        result = self._applicationProxy.proxy.getParameter(value)
         return result
 
     def getAllParameterLimits(self) -> dict:
@@ -60,7 +60,7 @@ class Application(object):
 
         :return: (dict)
         """
-        result = self._applicationProxy.getAllParameterLimits()
+        result = self._applicationProxy.proxy.getAllParameterLimits()
         return result
 
     @property
@@ -94,7 +94,7 @@ class Application(object):
         max_chars = 64
         if value.__len__() > max_chars:
             raise ValueError("Max. {} characters".format(max_chars))
-        self._applicationProxy.setParameter("Name", value)
+        self._applicationProxy.proxy.setParameter("Name", value)
         self.waitForConfigurationDone()
 
     @property
@@ -118,7 +118,7 @@ class Application(object):
         max_chars = 500
         if value.__len__() > 500:
             raise ValueError("Max. {} characters".format(max_chars))
-        self._applicationProxy.setParameter("Description", value)
+        self._applicationProxy.proxy.setParameter("Description", value)
         self.waitForConfigurationDone()
 
     @property
@@ -159,7 +159,7 @@ class Application(object):
         if value not in range(int(limits["min"]), int(limits["max"]), 1):
             raise ValueError("RPC Trigger value not available. Available range: {}\n"
                              "For more help take a look on the docstring documentation.".format(limits))
-        self._applicationProxy.setParameter("TriggerMode", value)
+        self._applicationProxy.proxy.setParameter("TriggerMode", value)
         self.waitForConfigurationDone()
 
     @property
@@ -184,7 +184,7 @@ class Application(object):
         if not float(limits["min"]) <= float(value) <= float(limits["max"]):
             raise ValueError("FrameRate value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["FrameRate"]))
-        self._applicationProxy.setParameter("FrameRate", value)
+        self._applicationProxy.proxy.setParameter("FrameRate", value)
         self.waitForConfigurationDone()
 
     @property
@@ -248,7 +248,7 @@ class Application(object):
                                           lower=width_lower, upper=width_upper))
         if valueErrorList:
             raise ValueError("".join(valueErrorList))
-        self._applicationProxy.setParameter("HWROI", json.dumps(value))
+        self._applicationProxy.proxy.setParameter("HWROI", json.dumps(value))
         self.waitForConfigurationDone()
 
     @property
@@ -258,7 +258,7 @@ class Application(object):
 
         :return: (bool) True / False
         """
-        result = self._applicationProxy.getParameter("Rotate180Degree")
+        result = self._applicationProxy.proxy.getParameter("Rotate180Degree")
         if result == "false":
             return False
         return True
@@ -271,7 +271,7 @@ class Application(object):
         :param value: (bool) True / False
         :return: None
         """
-        self._applicationProxy.setParameter("Rotate180Degree", value)
+        self._applicationProxy.proxy.setParameter("Rotate180Degree", value)
         self.waitForConfigurationDone()
 
     @property
@@ -281,7 +281,7 @@ class Application(object):
 
         :return: (float) current focus distance in meter
         """
-        result = float(self._applicationProxy.getParameter("FocusDistance"))
+        result = float(self._applicationProxy.proxy.getParameter("FocusDistance"))
         return result
 
     @FocusDistance.setter
@@ -296,7 +296,7 @@ class Application(object):
         if not float(limits["min"]) <= float(value) <= float(limits["max"]):
             raise ValueError("FocusDistance value not available. Available range: {}"
                              .format(self.getAllParameterLimits()["FocusDistance"]))
-        self._applicationProxy.setParameter("FocusDistance", value)
+        self._applicationProxy.proxy.setParameter("FocusDistance", value)
         # TODO: Wird hier geblockt? Wird der Focus Distance direkt nach dem setzen angefahren?
         # Edit: Kein Error, jedoch sind die Bilder unscharf wenn direkt danach das Bild angefordert wird: Fokus wird während requestImage im PCIC noch angefahren!
         self.waitForConfigurationDone()
@@ -309,7 +309,7 @@ class Application(object):
 
         :return: (str)
         """
-        result = self._applicationProxy.getParameter("ImageEvaluationOrder")
+        result = self._applicationProxy.proxy.getParameter("ImageEvaluationOrder")
         return result
 
     @ImageEvaluationOrder.setter
@@ -321,7 +321,7 @@ class Application(object):
         :param value: (list) a whitespace separated list of ImagerConfig ids
         :return: None
         """
-        self._applicationProxy.setParameter("ImageEvaluationOrder", value)
+        self._applicationProxy.proxy.setParameter("ImageEvaluationOrder", value)
         self.waitForConfigurationDone()
 
     @property
@@ -330,7 +330,7 @@ class Application(object):
         The PCIC TCP/IP Schema defines which result-data will be sent via TCP/IP.
         :return: (str) pcic tcp/ip schema config
         """
-        return self._applicationProxy.getParameter("PcicTcpResultSchema")
+        return self._applicationProxy.proxy.getParameter("PcicTcpResultSchema")
 
     @PcicTcpResultSchema.setter
     def PcicTcpResultSchema(self, schema: str) -> None:
@@ -339,7 +339,7 @@ class Application(object):
         :param schema: (str) pcic tcp/ip schema config
         :return: None
         """
-        self._applicationProxy.setParameter("PcicTcpResultSchema", schema)
+        self._applicationProxy.proxy.setParameter("PcicTcpResultSchema", schema)
         validation = self.validate()
         if validation:
             warnings.warn(str(validation), UserWarning)
@@ -352,7 +352,7 @@ class Application(object):
         JSON string describing a flow-graph which allows to program the logic between model-results and output-pins.
         :return: (str) JSON string flow-graph of Logic Layer
         """
-        return self._applicationProxy.getParameter("LogicGraph")
+        return self._applicationProxy.proxy.getParameter("LogicGraph")
 
     @LogicGraph.setter
     def LogicGraph(self, schema: str) -> None:
@@ -361,7 +361,7 @@ class Application(object):
         :param schema: (str) JSON string flow-graph of Logic Layer
         :return: None
         """
-        self._applicationProxy.setParameter("LogicGraph", schema)
+        self._applicationProxy.proxy.setParameter("LogicGraph", schema)
         validation = self.validate()
         if validation:
             warnings.warn(str(validation), UserWarning)
@@ -440,7 +440,7 @@ class Application(object):
 
         :return: None
         """
-        self._applicationProxy.save()
+        self._applicationProxy.proxy.save()
         self.waitForConfigurationDone()
 
     def validate(self) -> list:
@@ -449,7 +449,7 @@ class Application(object):
 
         :return: Array of fault-structs (Id: int, Text: string)
         """
-        result = self._applicationProxy.validate()
+        result = self._applicationProxy.proxy.validate()
         return result
 
     def getImagerConfigList(self) -> list:
@@ -458,7 +458,7 @@ class Application(object):
 
         :return: (list) Array of strings
         """
-        result = self._applicationProxy.getImagerConfigList()
+        result = self._applicationProxy.proxy.getImagerConfigList()
         return result
 
     def availableImagerConfigTypes(self) -> list:
@@ -467,7 +467,7 @@ class Application(object):
 
         :return: (list) Array of strings
         """
-        result = self._applicationProxy.availableImagerConfigTypes()
+        result = self._applicationProxy.proxy.availableImagerConfigTypes()
         return result
 
     def createImagerConfig(self, imagerType='normal', addToEval=True):
@@ -479,7 +479,7 @@ class Application(object):
                                  not be activated for the image acquisition/evaluation run
         :return: (int) ID of new image-config
         """
-        imagerIndex = self._applicationProxy.createImagerConfig(imagerType)
+        imagerIndex = self._applicationProxy.proxy.createImagerConfig(imagerType)
         if addToEval:
             imageEvalOrder = self.ImageEvaluationOrder
             imageEvalOrder += "{} ".format(imagerIndex)
@@ -494,7 +494,7 @@ class Application(object):
         :param imagerIndex: (int) ID of other Imager config
         :return: (int) ID of new image-config
         """
-        imagerIndex = self._applicationProxy.copyImagerConfig(imagerIndex)
+        imagerIndex = self._applicationProxy.proxy.copyImagerConfig(imagerIndex)
         self.waitForConfigurationDone()
         return imagerIndex
 
@@ -506,7 +506,7 @@ class Application(object):
         :param imagerIndex: (int) ID of image-config that should be removed
         :return: None
         """
-        self._applicationProxy.deleteImagerConfig(imagerIndex)
+        self._applicationProxy.proxy.deleteImagerConfig(imagerIndex)
         self.waitForConfigurationDone()
 
     def isConfigurationDone(self) -> bool:
@@ -516,7 +516,7 @@ class Application(object):
 
         :return: (bool) True or False
         """
-        result = self._applicationProxy.isConfigurationDone()
+        result = self._applicationProxy.proxy.isConfigurationDone()
         return result
 
     def waitForConfigurationDone(self):
@@ -527,14 +527,4 @@ class Application(object):
 
         :return: None
         """
-        self._applicationProxy.waitForConfigurationDone()
-
-    def __getattr__(self, name):
-        """Pass given name to the actual xmlrpc.client.ServerProxy.
-
-        Args:
-            name (str): name of attribute
-        Returns:
-            Attribute of xmlrpc.client.ServerProxy
-        """
-        return self._editProxy.__getattr__(name)
+        self._applicationProxy.proxy.waitForConfigurationDone()

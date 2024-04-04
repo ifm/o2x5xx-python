@@ -27,7 +27,7 @@ class ImageQualityCheck(object):
 
         :return: (bool) True / False
         """
-        if self._imagerProxy.getAllParameters()["QualityCheckConfig"]:
+        if self._imagerProxy.proxy.getAllParameters()["QualityCheckConfig"]:
             return True
         return False
 
@@ -40,9 +40,9 @@ class ImageQualityCheck(object):
         :return: None
         """
         if value:
-            self._imagerProxy.setParameter("QualityCheckConfig", True)
+            self._imagerProxy.proxy.setParameter("QualityCheckConfig", True)
         else:
-            self._imagerProxy.setParameter("QualityCheckConfig", "")
+            self._imagerProxy.proxy.setParameter("QualityCheckConfig", "")
         while self._device.isConfigurationDone() < 1.0:
             time.sleep(1)
 
@@ -55,7 +55,7 @@ class ImageQualityCheck(object):
         """
         if not self.enabled:
             return None
-        result = self._imagerProxy.getAllParameters()["QualityCheckConfig"]
+        result = self._imagerProxy.proxy.getAllParameters()["QualityCheckConfig"]
         result = ast.literal_eval(result)
         return result
 
@@ -69,7 +69,7 @@ class ImageQualityCheck(object):
         """
         if not self.enabled:
             self.enabled = True
-        self._imagerProxy.setParameter("QualityCheckConfig", json.dumps(inputDict))
+        self._imagerProxy.proxy.setParameter("QualityCheckConfig", json.dumps(inputDict))
 
     @property
     def _QualityCheckConfigSchema(self) -> dict:
@@ -78,7 +78,7 @@ class ImageQualityCheck(object):
 
         :return: (dict) schema of Image Quality Check
         """
-        # ip = urlparse(self._imagerProxy.baseURL).netloc
+        # ip = urlparse(self._imagerProxy.proxy.baseURL).netloc
         # with urlopen("http://{}/schema/ParamImageFeatures.json".format(ip)) as url:
         #     data = json.load(url)
         #     return data

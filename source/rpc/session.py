@@ -37,8 +37,8 @@ class Session(object):
         :return: None
         """
         self.setOperatingMode(0)
-        self.device._editURL = None
-        self.device._editProxy = None
+        self._device._editURL = None
+        self._device._editProxy = None
 
     def setOperatingMode(self, mode) -> [None, Edit]:
         """
@@ -50,7 +50,7 @@ class Session(object):
                      2: simulation mode (Not implemented!)
         :return: None or Edit object
         """
-        self.__getattr__('setOperatingMode')(mode)
+        self._sessionProxy.proxy.setOperatingMode(mode)
 
     def exportConfig(self) -> bytearray:
         """
@@ -59,14 +59,14 @@ class Session(object):
         :return: (bytearray) configuration as one data-blob :binary/base64
         """
         # increase heartbeat interval which will prevent a closed session after the "long" export progress
-        self._device.sessionProxy.heartbeat(heartbeatInterval=30)
-        config = self._sessionProxy.exportConfig()
+        self._sessionProxy.heartbeat(heartbeatInterval=30)
+        config = self._sessionProxy.proxy.exportConfig()
         config_bytes = bytearray()
         config_bytes.extend(map(ord, str(config)))
         while self.getExportProgress() < 1.0:
             time.sleep(1)
         self.cleanupExport()
-        self._device.waitForConfigurationDone()
+        self._device.mainProxy.proxy.waitForConfigurationDone()
         return config_bytes
 
     def importConfig(self, config: str, global_settings=True, network_settings=False, applications=True) -> None:
@@ -80,16 +80,16 @@ class Session(object):
         :return:                    None
         """
         # This is required due to the long import progress which may take longer than 10 seconds (default)
-        self._device.sessionProxy.heartbeat(heartbeatInterval=30)
+        self._sessionProxy.heartbeat(heartbeatInterval=30)
         if global_settings:
-            self._sessionProxy.importConfig(config, 0x0001)
+            self._sessionProxy.proxy.importConfig(config, 0x0001)
         if network_settings:
-            self._sessionProxy.importConfig(config, 0x0002)
+            self._sessionProxy.proxy.importConfig(config, 0x0002)
         if applications:
-            self._sessionProxy.importConfig(config, 0x0010)
+            self._sessionProxy.proxy.importConfig(config, 0x0010)
         while self.getImportProgress() < 1.0:
             time.sleep(1)
-        self._device.waitForConfigurationDone()
+        self._device.mainProxy.proxy.waitForConfigurationDone()
 
     def exportApplication(self, applicationIndex: int) -> bytearray:
         """
@@ -99,7 +99,7 @@ class Session(object):
         :return: None
         """
 
-        config = self._sessionProxy.exportApplication(applicationIndex)
+        config = self._sessionProxy.proxy.exportApplication(applicationIndex)
         application_bytes = bytearray()
         application_bytes.extend(map(ord, str(config)))
         while self.getExportProgress() < 1.0:
@@ -116,7 +116,7 @@ class Session(object):
         :return: (int) index of new application in list
         """
 
-        index = int(self._sessionProxy.importApplication(application))
+        index = int(self._sessionProxy.proxy.importApplication(application))
         while self.getImportProgress() < 1.0:
             time.sleep(1)
         return index
@@ -129,7 +129,7 @@ class Session(object):
         :return: (float) progress (0.0 to 1.0)
         """
         try:
-            result = self._sessionProxy.getImportProgress()
+            result = self._sessionProxy.proxy.getImportProgress()
             return result
         except xmlrpc.client.Fault as fault:
             if fault.faultCode == 101107:
@@ -143,7 +143,7 @@ class Session(object):
         :return: (float) progress (0.0 to 1.0)
         """
         try:
-            result = self._sessionProxy.getExportProgress()
+            result = self._sessionProxy.proxy.getExportProgress()
             return result
         except xmlrpc.client.Fault as fault:
             if fault.faultCode == 101110:
@@ -158,7 +158,7 @@ class Session(object):
 
         :return: None
         """
-        self._sessionProxy.cleanupExport()
+        self._sessionProxy.proxy.cleanupExport()
 
     def getApplicationDetails(self, applicationIndex: [int, str]) -> dict:
         """
@@ -168,7 +168,7 @@ class Session(object):
         :param applicationIndex: (int) application Index
         :return: (dict) json-string containing application parameters, models and image settings
         """
-        result = json.loads(self._sessionProxy.getApplicationDetails(applicationIndex))
+        result = json.loads(self._sessionProxy.proxy.getApplicationDetails(applicationIndex))
         return result
 
     def resetStatistics(self) -> None:
@@ -177,8 +177,8 @@ class Session(object):
 
         :return: None
         """
-        self._sessionProxy.resetStatistics()
-        self._device.waitForConfigurationDone()
+        self._sessionProxy.proxy.resetStatistics()
+        self._device.mainProxy.proxy.waitForConfigurationDone()
 
     def writeApplicationConfigFile(self, applicationName: str, data: bytearray) -> None:
         """
@@ -247,12 +247,13 @@ class Session(object):
             else:
                 raise FileExistsError("File {} does not exist!".format(configFile))
 
-    def __getattr__(self, name):
-        """Pass given name to the actual xmlrpc.client.ServerProxy.
-
-        Args:
-            name (str): name of attribute
-        Returns:
-            Attribute of xmlrpc.client.ServerProxy
+    def cancelSession(self) -> None:
         """
-        return self._sessionProxy.__getattr__(name)
+        Method for closing the session.
+        :return: None
+        """
+        self._sessionProxy.proxy.cancelSession()
+        self._sessionProxy.close()
+        self._sessionProxy = None
+        self._device._sessionURL = None
+        self._device._sessionId = None

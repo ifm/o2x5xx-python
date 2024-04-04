@@ -110,6 +110,17 @@ class TestDeviceV1(TestCase):
         duration_secs = end_time - start_time
         self.assertLess(duration_secs, TIMEOUT_VALUE+1)
 
+    def test_device_v1_client_RPC_and_PCIC_client_properties_after_exit_method(self):
+        device = O2x5xxDevice(deviceAddress, pcicTcpPort)
+        with device:
+            device.rpc.getParameter("ActiveApplication")
+            device.request_device_information()
+        device.rpc.getParameter("ActiveApplication")
+        with self.assertRaises(AttributeError):
+            device.request_device_information()
+        device.connect()
+        device.request_device_information()
+
 
 class TestDeviceV2(TestCase):
     device = None
@@ -156,6 +167,7 @@ class TestDeviceV2(TestCase):
                 result = device.pcic.occupancy_of_application_list()
                 self.assertNotEqual(result, "!")
                 self.assertNotEqual(result, "?")
+                device.pcic.disconnect()
 
     def test_device_v2_client_without_context_manager_with_autoconnect_False(self):
         device = O2x5xxDeviceV2(deviceAddress, pcicTcpPort, autoconnect=False)
@@ -213,3 +225,11 @@ class TestDeviceV2(TestCase):
         end_time = time.time()
         duration_secs = end_time - start_time
         self.assertLess(duration_secs, TIMEOUT_VALUE+1)
+
+    def test_device_v2_client_RPC_and_PCIC_client_properties_after_exit_method(self):
+        device = O2x5xxDeviceV2(deviceAddress, pcicTcpPort)
+        with device:
+            device.rpc.getParameter("ActiveApplication")
+            device.pcic.request_device_information()
+        device.rpc.getParameter("ActiveApplication")
+        device.pcic.request_device_information()

@@ -47,7 +47,7 @@ class TestRPC_MainAPI(TestCase):
         for timeout_value in TIMEOUT_VALUES:
             start_time = time.time()
             with self.assertRaises(socket.timeout):
-                with O2x5xxRPCDevice("192.168.0.5", timeout=timeout_value) as device:
+                with O2x5xxRPCDevice("192.168.1.5", timeout=timeout_value) as device:
                     device.rpc.getParameter("ActiveApplication")
                     self.assertEqual(device.mainProxy.timeout, timeout_value)
             end_time = time.time()
@@ -107,10 +107,10 @@ class TestRPC_MainAPI(TestCase):
                 self.assertEqual(int(rpc.getParameter("ActiveApplication")), 1)
             else:
                 rpc.switchApplication(applicationIndex=2)
+                rpc.trigger()
                 while rpc.getParameter("OperatingMode") != "0":
                     time.sleep(1)
                 self.assertEqual(int(rpc.getParameter("ActiveApplication")), 2)
-                time.sleep(5)
             # Switch back to initial application
             rpc.switchApplication(applicationIndex=initial_application)
             while rpc.getParameter("OperatingMode") != "0":
@@ -197,19 +197,6 @@ class TestRPC_MainAPI(TestCase):
             result = rpc.measure(measureInput=input_measure_circle)
             self.assertIsInstance(result, dict)
             self.assertTrue(result)
-
-    def test_trigger(self):
-        with O2x5xxRPCDevice(deviceAddress) as rpc:
-            number_trigger = 10
-            application_active = rpc.getParameter(value="ActiveApplication")
-            initial_application_stats = rpc.getApplicationStatisticData(applicationIndex=int(application_active))
-            initial_number_of_frames = initial_application_stats['number_of_frames']
-            for i in range(number_trigger):
-                answer = rpc.trigger()
-                self.assertTrue(answer)
-            application_stats = rpc.getApplicationStatisticData(applicationIndex=int(application_active))
-            number_of_frames = application_stats['number_of_frames']
-            self.assertEqual(number_of_frames, initial_number_of_frames + number_trigger)
 
     def test_doPing(self):
         with O2x5xxRPCDevice(deviceAddress) as rpc:

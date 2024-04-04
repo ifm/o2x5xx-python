@@ -33,29 +33,29 @@ class Client(object):
         :return: None
         """
         if not self.connected:
-            self.pcicSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.pcicSocket.settimeout(self.timeout)
-            self.pcicSocket.connect((self.address, self.port))
+            self.pcicSocket = socket.create_connection((self.address, self.port), timeout=self.timeout)
             self.connected = True
 
     @property
     def timeout(self):
         """
-        Get the current timeout value on blocking socket operations as a floating point number expressing seconds.
+        Get the current timeout value on blocking socket operations. If no socket instance available
+        the preset timeout value will be returned.
 
         :return: (float) socket timeout in seconds
         """
+        if self.pcicSocket:
+            return self.pcicSocket.gettimeout()
         return self._timeout
 
     @timeout.setter
     def timeout(self, value):
         """
-        Set a timeout on blocking socket operations. The value argument can be a non-negative floating point number
-        expressing seconds, or None. If a non-zero value is given, subsequent socket operations will raise a timeout
-        exception if the timeout period value has elapsed before the operation has completed. If zero is given,
-        the socket is put in non-blocking mode. If None is given, the socket is put in blocking mode.
+        Set a timeout on blocking socket operations. If a non-zero value is given, subsequent socket operations will
+        raise a timeout exception if the timeout period value has elapsed before the operation has completed.
+        If zero is given, the socket is put in non-blocking mode. If None is given, the socket is put in blocking mode.
 
-        :param value: (float) in seconds.
+        :param value: (float) non-negative socket timeout in seconds
         :return: None
         """
         self._timeout = value

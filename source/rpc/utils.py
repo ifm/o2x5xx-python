@@ -1,24 +1,6 @@
 import zipfile
 import json
 import warnings
-import multiprocessing.pool
-import functools
-
-
-def timeout(max_timeout):
-    """Timeout decorator, parameter in seconds."""
-    def timeout_decorator(item):
-        """Wrap the original function."""
-        @functools.wraps(item)
-        def func_wrapper(*args, **kwargs):
-            """Closure for function."""
-            pool = multiprocessing.pool.ThreadPool(processes=1)
-            async_result = pool.apply_async(item, args, kwargs)
-            pool.close()
-            # raises a TimeoutError if execution exceeds max_timeout
-            return async_result.get(max_timeout)
-        return func_wrapper
-    return timeout_decorator
 
 
 def firmwareWarning(function):
@@ -36,7 +18,7 @@ def firmwareWarning(function):
             raise ImportError("Unknown config file in zip: {}".format(str(zipFiles)))
         jsonData = json.loads(zipOpen.open(tmp).read())
         minConfigFileFirmware = jsonData["Firmware"]
-        sensorFirmware = self._device.mainProxy.getSWVersion()["IFM_Software"]
+        sensorFirmware = self._device.getSWVersion()["IFM_Software"]
         if int(sensorFirmware.replace(".", "")) < int(minConfigFileFirmware.replace(".", "")):
             message = "Missmatch in firmware versions: Sensor firmware {} is lower than {} firmware {}. " \
                       "Import of may will fail!".format(sensorFirmware, tmp, minConfigFileFirmware)

@@ -378,3 +378,28 @@ class TestPCIC(TestCase):
                 self.assertEqual(result, "*")
                 result = pcic.request_current_protocol_version()
                 self.assertEqual(result, "0{} 01 02 03".format(str(initialPCICVersion)))
+
+    def test_timeout(self):
+        TIMEOUT_VALUES = range(1, 5)
+
+        # Passing timeout value to constructor
+        for timeout_value in TIMEOUT_VALUES:
+            with O2x5xxPCICDevice(deviceAddress, pcicTcpPort, timeout=timeout_value) as pcic:
+                self.assertEqual(pcic.timeout, timeout_value)
+
+        # Passing timeout value to constructor with autoconnect = False
+        for timeout_value in TIMEOUT_VALUES:
+            with O2x5xxPCICDevice(deviceAddress, pcicTcpPort, timeout=timeout_value, autoconnect=False) as pcic:
+                self.assertEqual(pcic.timeout, timeout_value)
+
+        # Passing timeout value to property
+        for timeout_value in TIMEOUT_VALUES:
+            with O2x5xxPCICDevice(deviceAddress, pcicTcpPort) as pcic:
+                pcic.timeout = timeout_value
+                self.assertEqual(pcic.timeout, timeout_value)
+
+        # Passing timeout value to property with autoconnect = False
+        for timeout_value in TIMEOUT_VALUES:
+            with O2x5xxPCICDevice(deviceAddress, pcicTcpPort, autoconnect=False) as pcic:
+                pcic.timeout = timeout_value
+                self.assertEqual(pcic.timeout, timeout_value)

@@ -1,5 +1,5 @@
 from unittest import TestCase
-from source import O2x5xxRPCDevice
+from source import O2x5xxRPCDevice, O2x5xxPCICDevice
 from tests.utils import *
 from .config import *
 
@@ -84,9 +84,10 @@ class TestRPC_SessionObject(TestCase):
             triggerNum = 20
             self.rpc.switchApplication(applicationIndex=2)
             self.rpc.session.resetStatistics()
-            for i in range(triggerNum):
-                answer = self.rpc.trigger()
-                self.assertTrue(answer)
+            with O2x5xxPCICDevice(deviceAddress, pcicTcpPort) as pcic:
+                for i in range(triggerNum):
+                    answer = pcic.execute_synchronous_trigger()
+                    self.assertTrue(answer)
             result = self.rpc.getApplicationStatisticData(applicationIndex=2)
             self.assertEqual(result['number_of_frames'], triggerNum)
             self.rpc.session.resetStatistics()

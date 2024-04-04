@@ -40,16 +40,6 @@ class BaseProxy(object):
     def proxy(self):
         return self.__proxy
 
-    def __getattr__(self, name):
-        """Pass given name to the actual xmlrpc.client.ServerProxy.
-
-        Args:
-            name (str): name of attribute
-        Returns:
-            Attribute of xmlrpc.client.ServerProxy
-        """
-        return self.__proxy.__getattr__(name)
-
     def close(self):
         self.__transport.close()
         self.__transport = None
@@ -86,7 +76,7 @@ class MainProxy(BaseProxy):
             If None, SOCKET_TIMEOUT value is used as default
         """
         try:
-            self.device._sessionId = self.__getattr__('requestSession')(password, session_id)
+            self.device._sessionId = self.proxy.requestSession(password, session_id)
             self.device._sessionURL = self.baseURL + 'session_' + session_id + '/'
             self.device._sessionProxy = SessionProxy(url=self.device._sessionURL,
                                                      device=self.device, timeout=timeout)
@@ -97,7 +87,7 @@ class MainProxy(BaseProxy):
                     self.device._sessionProxy.autoHeartbeatTimer.cancel()
             except AttributeError:
                 pass
-            self.device._sessionProxy.cancelSession()
+            self.device._sessionProxy.proxy.cancelSession()
             self.device._sessionProxy.close()
             self.device._sessionProxy = None
             self.device._sessionURL = None
@@ -157,12 +147,12 @@ class SessionProxy(BaseProxy):
             If None, SOCKET_TIMEOUT value is used as default
         """
         try:
-            self.__getattr__('setOperatingMode')(mode)
+            self.proxy.setOperatingMode(mode)
             self.device._editURL = self.baseURL + 'edit/'
             self.device._editProxy = EditProxy(url=self.device._editURL, device=self.device, timeout=timeout)
             yield
         finally:
-            self.__getattr__('setOperatingMode')(0)
+            self.proxy.setOperatingMode(0)
             self.device._editProxy.close()
             self.device._editURL = None
             self.device._editProxy = None
@@ -188,13 +178,13 @@ class EditProxy(BaseProxy):
             If None, SOCKET_TIMEOUT value is used as default
         """
         try:
-            self.__getattr__('editApplication')(app_index)
+            self.proxy.editApplication(app_index)
             self.device._applicationURL = self.baseURL + "application/"
             self.device._applicationProxy = ApplicationProxy(url=self.device._applicationURL, device=self.device,
                                                              timeout=timeout)
             yield
         finally:
-            self.__getattr__('stopEditingApplication')()
+            self.proxy.stopEditingApplication()
             self.device._applicationProxy.close()
             self.device._applicationURL = None
             self.device._applicationProxy = None
