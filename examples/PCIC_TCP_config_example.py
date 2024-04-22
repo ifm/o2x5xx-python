@@ -53,7 +53,7 @@ if __name__ == '__main__':
         print("Executing trigger...")
         trigger_result = pcic.execute_asynchronous_trigger()
 
-        # Read next answer is trigger was successful
+        # Read next answer if trigger was successful
         if trigger_result == "*":
             answer = pcic.read_next_answer()
             print(answer[1].decode())
