@@ -136,6 +136,13 @@ class SessionProxy(BaseProxy):
         self.autoHeartbeatTimer = Timer(self.autoHeartbeatInterval - 1, self.doAutoHeartbeat)
         self.autoHeartbeatTimer.start()
 
+    def cancelSession(self):
+        if self.autoHeartbeatTimer != None:
+            self.autoHeartbeatTimer.cancel()
+            self.autoHeartbeatTimer.join()
+            self.autoHeartbeatTimer = None
+        self.proxy.cancelSession()
+
     @contextmanager
     def setOperatingMode(self, mode, timeout=SOCKET_TIMEOUT):
         """Generator for setOperatingMode to be used in with statement.

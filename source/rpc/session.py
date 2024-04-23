@@ -252,7 +252,7 @@ class Session(object):
         Method for closing the session.
         :return: None
         """
-        self._sessionProxy.proxy.cancelSession()
+        self._sessionProxy.cancelSession()
         self._sessionProxy.close()
         self._sessionProxy = None
         self._device._sessionURL = None
