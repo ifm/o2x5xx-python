@@ -35,6 +35,10 @@ images_config = {
                 {
                     "id": "jpeg_image",
                     "type": "blob"
+                },
+                {
+                    "id": "raw_image",
+                    "type": "blob"
                 }
             ],
             "id": "Images",

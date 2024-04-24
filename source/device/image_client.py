@@ -6,9 +6,15 @@ from ..static.configs import images_config
 import binascii
 import struct
 import io
+import enum
+import array
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import numpy as np
 
+class ChunkType(enum.IntEnum):
+	MONOCHROME_2D_8BIT = 251
+	JPEG_IMAGE = 260
 
 class ImageClient(O2x5xxPCICDevice):
 	def __init__(self, address, port):
@@ -82,7 +88,14 @@ class ImageClient(O2x5xxPCICDevice):
 			results.setdefault(counter, []).append(header)
 			# append image
 			image_hex = data[header['HEADER_SIZE']:header['CHUNK_SIZE']]
-			image = mpimg.imread(io.BytesIO(image_hex), format='jpg')
+			chunk_type = int(header['CHUNK_TYPE'])
+			if chunk_type == ChunkType.JPEG_IMAGE:
+				image = mpimg.imread(io.BytesIO(image_hex), format='jpg')
+			elif chunk_type == ChunkType.MONOCHROME_2D_8BIT:
+				image = np.reshape(array.array('B', image_hex), (header['IMAGE_HEIGHT'], header['IMAGE_WIDTH']))
+			else:
+				image = None
+				print("Unknown image chunk type", header['CHUNK_TYPE'])
 			results[counter].append(image)
 
 			length -= header['CHUNK_SIZE']
