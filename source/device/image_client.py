@@ -51,9 +51,12 @@ class ImageClient(O2x5xxPCICDevice):
 		ticket, answer = self.read_next_answer()
 
 		if ticket == b"0000":
-			delimiter = str(answer).find('stop')
-			ids = answer[:delimiter-12].decode()
-			return ids.split(';')[1:-1]
+			delimiter = answer.find(b'stop')
+			if delimiter == -1:
+				print("stop identifier not found in result")
+				return []
+			ids = answer[5:delimiter].decode()
+			return ids.split(';')[0:-1]
 
 	@staticmethod
 	def _deserialize_image_chunk(data):
@@ -64,8 +67,7 @@ class ImageClient(O2x5xxPCICDevice):
 		:return: deserialized results
 		"""
 		results = {}
-		length = int(data.__len__())
-		data = binascii.unhexlify(data.hex())
+		length = len(data)
 		counter = 0
 
 		while length:
@@ -100,8 +102,11 @@ class ImageClient(O2x5xxPCICDevice):
 		ticket, answer = self.read_next_answer()
 
 		if ticket == b"0000":
-			delimiter = str(answer).find('stop')
-			result = self._deserialize_image_chunk(data=answer[delimiter-8:])
+			delimiter = answer.find(b'stop')
+			if delimiter == -1:
+				print("stop identifier not found in result")
+				self.frames = []
+			result = self._deserialize_image_chunk(data=answer[delimiter+4:])
 			self.frames = [result[i][1] for i in result]
 
 	def make_figure(self, idx):
