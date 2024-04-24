@@ -93,8 +93,8 @@ class Client(object):
         fragments = []
 
         while total_recved < number_bytes:
-            chunk = self.pcicSocket.recv(
-                Client.BUF_LEN if number_bytes - total_recved >= Client.BUF_LEN else number_bytes)
+            bytes_to_receive = min(Client.BUF_LEN, number_bytes - total_recved)
+            chunk = self.pcicSocket.recv(bytes_to_receive)
 
             if len(chunk) == 0:
                 raise RuntimeError("Connection to server closed")
