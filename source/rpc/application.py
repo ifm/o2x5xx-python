@@ -275,6 +275,31 @@ class Application(object):
         self.waitForConfigurationDone()
 
     @property
+    def UncompressedImages(self) -> bool:
+        """
+        Flag whether images are output uncompressed (raw pixel images as
+        opposed to JPEG images)
+
+        :return: (bool) True / False
+        """
+        result = self._applicationProxy.proxy.getParameter("2dUncompressedImages")
+        if result == "false":
+            return False
+        return True
+
+    @UncompressedImages.setter
+    def UncompressedImages(self, value: bool) -> None:
+        """
+        Set image format for output (True for uncompressed pixel images,
+        False for JPEG images)
+
+        :param value: (bool) True / False
+        :return: None
+        """
+        self._applicationProxy.proxy.setParameter("2dUncompressedImages", value)
+        self.waitForConfigurationDone()
+
+    @property
     def FocusDistance(self) -> float:
         """
         Represents current Focus position and allows to directly change to a specific position.
