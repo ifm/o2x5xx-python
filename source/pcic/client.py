@@ -412,13 +412,19 @@ class O2x5xxPCICDevice(PCICV3Client):
             # append image
             image_hex = data[header['HEADER_SIZE']:header['CHUNK_SIZE']]
             chunk_type = int(header['CHUNK_TYPE'])
-            if datatype == 'ndarray' and ChunkType.JPEG_IMAGE:
-                image = mpimg.imread(io.BytesIO(image_hex), format='jpg')
-                results[counter].append(image)
-            elif image_id == 2 and chunk_type == ChunkType.MONOCHROME_2D_8BIT:
-                image = np.frombuffer(image_hex, dtype=np.uint8)\
-                    .reshape((header["IMAGE_HEIGHT"], header["IMAGE_WIDTH"]))
-                results[counter].append(image)
+            # check end decode image depending on chunk type
+            if datatype == 'ndarray':
+                if chunk_type == ChunkType.JPEG_IMAGE:
+                    # Check that we have received chunk type JPEG_IMAGE
+                    # Convert jpeg data to image data
+                    image = mpimg.imread(io.BytesIO(image_hex), format='jpg')
+                    results[counter].append(image)
+                elif chunk_type == ChunkType.MONOCHROME_2D_8BIT:
+                    # Check that we have received chunk type MONOCHROME_2D_8BIT
+                    # Read pixel data and reshape to width/height
+                    image = np.frombuffer(image_hex, dtype=np.uint8)\
+                        .reshape((header["IMAGE_HEIGHT"], header["IMAGE_WIDTH"]))
+                    results[counter].append(image)
             elif datatype == 'bytes':
                 results[counter].append(image_hex)
             else:
