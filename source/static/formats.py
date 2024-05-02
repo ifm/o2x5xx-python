@@ -1,3 +1,5 @@
+import enum
+
 # These are the error codes with the corresponding error message
 error_codes = {
     000000000: "No error detected",
@@ -78,3 +80,8 @@ illumination_types = {
     2: "external illumination shall be used",
     3: "internal and external illumination shall be used together"
 }
+
+
+class ChunkType(enum.IntEnum):
+    MONOCHROME_2D_8BIT = 251
+    JPEG_IMAGE = 260

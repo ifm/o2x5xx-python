@@ -1,5 +1,6 @@
-from ..static.formats import error_codes, serialization_format
+from ..static.formats import error_codes, serialization_format, ChunkType
 import matplotlib.image as mpimg
+import numpy as np
 import binascii
 import socket
 import struct
@@ -361,7 +362,8 @@ class O2x5xxPCICDevice(PCICV3Client):
                  - <length> (int) char string with exactly 9 digits as decimal number for the image data size in bytes. 
                  - <image data> (bytearray) image data / result data. The data is encapsulated in an image chunk. 
                  - ! No image available
-                   | Wrong ID 
+                   | Wrong ID (Applications which transfer uncompressed images are
+                   not able to transfer images as JPG and vise versa)
                  - ? Invalid command length
         """
         if str(image_id).isnumeric():
@@ -385,11 +387,14 @@ class O2x5xxPCICDevice(PCICV3Client):
                  - <image data> image data / result data. The data is encapsulated
                  in an image chunk if bytes as datatype is selected. 
                  - ! No image available
-                   | Wrong ID 
+                   | Wrong ID (Applications which transfer uncompressed images are
+                   not able to transfer images as JPG and vise versa)
                  - ? Invalid command length
         """
         results = {}
         result = self.request_last_image_taken(image_id)
+        if str(result)[2:3] == "!":
+            return "!"
         length = int(result[:9].decode())
         data = binascii.unhexlify(result[9:].hex())
         counter = 0
@@ -406,8 +411,13 @@ class O2x5xxPCICDevice(PCICV3Client):
             results.setdefault(counter, []).append(header)
             # append image
             image_hex = data[header['HEADER_SIZE']:header['CHUNK_SIZE']]
-            if datatype == 'ndarray':
+            chunk_type = int(header['CHUNK_TYPE'])
+            if datatype == 'ndarray' and ChunkType.JPEG_IMAGE:
                 image = mpimg.imread(io.BytesIO(image_hex), format='jpg')
+                results[counter].append(image)
+            elif image_id == 2 and chunk_type == ChunkType.MONOCHROME_2D_8BIT:
+                image = np.frombuffer(image_hex, dtype=np.uint8)\
+                    .reshape((header["IMAGE_HEIGHT"], header["IMAGE_WIDTH"]))
                 results[counter].append(image)
             elif datatype == 'bytes':
                 results[counter].append(image_hex)
