@@ -1,9 +1,8 @@
 from __future__ import (absolute_import, division, print_function)
 from builtins import *
-from ..pcic.client import O2x5xxPCICDevice
-from ..static.formats import serialization_format
-from ..static.configs import images_config
-import binascii
+from source.pcic import O2x5xxPCICDevice
+from source.static.formats import serialization_format
+from source.static.configs import images_config
 import struct
 import io
 import enum
@@ -12,13 +11,18 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
 
+
+SOCKET_TIMEOUT = 10
+
+
 class ChunkType(enum.IntEnum):
 	MONOCHROME_2D_8BIT = 251
 	JPEG_IMAGE = 260
 
+
 class ImageClient(O2x5xxPCICDevice):
-	def __init__(self, address, port):
-		super(ImageClient, self).__init__(address, port)
+	def __init__(self, address, port, timeout=SOCKET_TIMEOUT):
+		super(ImageClient, self).__init__(address=address, port=port, timeout=timeout)
 
 		# disable all result output
 		self.turn_process_interface_output_on_or_off(0)
