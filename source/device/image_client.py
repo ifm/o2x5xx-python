@@ -1,24 +1,21 @@
 from __future__ import (absolute_import, division, print_function)
 from builtins import *
-from ..pcic.client import O2x5xxPCICDevice
-from ..static.formats import serialization_format
-from ..static.configs import images_config
-import binascii
+from source.pcic import O2x5xxPCICDevice
+from source.static.formats import serialization_format, ChunkType
+from source.static.configs import images_config
 import struct
 import io
-import enum
-import array
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import numpy as np
 
-class ChunkType(enum.IntEnum):
-	MONOCHROME_2D_8BIT = 251
-	JPEG_IMAGE = 260
+
+SOCKET_TIMEOUT = 10
+
 
 class ImageClient(O2x5xxPCICDevice):
-	def __init__(self, address, port):
-		super(ImageClient, self).__init__(address, port)
+	def __init__(self, address, port, timeout=SOCKET_TIMEOUT):
+		super(ImageClient, self).__init__(address=address, port=port, timeout=timeout)
 
 		# disable all result output
 		self.turn_process_interface_output_on_or_off(0)
@@ -89,10 +86,18 @@ class ImageClient(O2x5xxPCICDevice):
 			# append image
 			image_hex = data[header['HEADER_SIZE']:header['CHUNK_SIZE']]
 			chunk_type = int(header['CHUNK_TYPE'])
+			# check end decode image depending on chunk type
 			if chunk_type == ChunkType.JPEG_IMAGE:
+				# Check that we have received chunk type JPEG_IMAGE
+				# Convert jpeg data to image data
 				image = mpimg.imread(io.BytesIO(image_hex), format='jpg')
+				results[counter].append(image)
 			elif chunk_type == ChunkType.MONOCHROME_2D_8BIT:
-				image = np.reshape(array.array('B', image_hex), (header['IMAGE_HEIGHT'], header['IMAGE_WIDTH']))
+				# Check that we have received chunk type MONOCHROME_2D_8BIT
+				# Read pixel data and reshape to width/height
+				image = np.frombuffer(image_hex, dtype=np.uint8) \
+					.reshape((header["IMAGE_HEIGHT"], header["IMAGE_WIDTH"]))
+				results[counter].append(image)
 			else:
 				image = None
 				print("Unknown image chunk type", header['CHUNK_TYPE'])
