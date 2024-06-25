@@ -1,4 +1,3 @@
-from urllib.parse import urlparse
 from urllib.request import urlopen
 import json
 import time
@@ -13,12 +12,6 @@ class ImageQualityCheck(object):
     def __init__(self, imagerProxy, device):
         self._imagerProxy = imagerProxy
         self._device = device
-
-    # def __enter__(self):
-    #     return self
-    #
-    # def __exit__(self, exc_type, exc_val, exc_tb):
-    #     pass
 
     @property
     def enabled(self) -> bool:
@@ -78,11 +71,6 @@ class ImageQualityCheck(object):
 
         :return: (dict) schema of Image Quality Check
         """
-        # ip = urlparse(self._imagerProxy.proxy.baseURL).netloc
-        # with urlopen("http://{}/schema/ParamImageFeatures.json".format(ip)) as url:
-        #     data = json.load(url)
-        #     return data
-
         with urlopen("http://{}/schema/ParamImageFeatures.json".format(self._device.address)) as url:
             data = json.load(url)
             return data

@@ -1,8 +1,8 @@
 from __future__ import (absolute_import, division, print_function)
 from builtins import *
-from source.pcic import O2x5xxPCICDevice
-from source.static.formats import serialization_format, ChunkType
-from source.static.configs import images_config
+from .client import O2x5xxPCICDevice
+from ..static.formats import serialization_format, ChunkType
+from ..static.configs import images_config
 import struct
 import io
 import matplotlib.pyplot as plt
