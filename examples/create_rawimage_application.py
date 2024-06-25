@@ -15,10 +15,9 @@ if __name__ == '__main__':
 
     # create device
     print("Create RPC device, request session and setup edit mode.")
-    with O2x5xxRPCDevice(address) as device:
-
-        with device.mainProxy.requestSession():
-            with device.sessionProxy.setOperatingMode(mode=1):
+with O2x5xxRPCDevice(address) as device, \
+    device.mainProxy.requestSession() as session, \
+    device.sessionProxy.setOperatingMode(mode=1) as editMode:
                 print("Operation Mode {} set".format(device.getParameter(value="OperatingMode")))
                 newApplicationIndex = device.edit.createApplication("Camera")
                 print("Created new application with index: " + str(newApplicationIndex))
