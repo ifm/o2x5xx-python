@@ -363,9 +363,10 @@ class Imager(object):
             defaultROIsZone = [{"id": 0, "group": 0, "type": "Rect", "width": 1280,
                                 "height": 960, "angle": 0, "center_x": 640, "center_y": 480}]
             inputAutoExposure["ROIs"] = defaultROIsZone
-            # RODs
-            if RODs:
-                inputAutoExposure["RODs"] = RODs
+        # RODs
+        if RODs:
+            inputAutoExposure["RODs"] = RODs
+            
         self._imagerProxy.proxy.startCalculateExposureTime(json.dumps(inputAutoExposure))
         while self.getProgressCalculateExposureTime() < 1.0:
             time.sleep(1)
@@ -395,9 +396,10 @@ class Imager(object):
             defaultROIsZone = [{"id": 0, "group": 0, "type": "Rect", "width": 1280,
                                 "height": 960, "angle": 0, "center_x": 640, "center_y": 480}]
             inputAutoFocus["ROIs"] = defaultROIsZone
-            # RODs
-            if RODs:
-                inputAutoFocus["RODs"] = RODs
+        # RODs
+        if RODs:
+            inputAutoFocus["RODs"] = RODs
+
         self._imagerProxy.proxy.startCalculateAutofocus(json.dumps(inputAutoFocus))
         while self.getProgressCalculateAutofocus() < 1.0:
             time.sleep(1)

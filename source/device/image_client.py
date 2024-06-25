@@ -1,18 +1,21 @@
 from __future__ import (absolute_import, division, print_function)
 from builtins import *
-from ..pcic.client import O2x5xxPCICDevice
-from ..static.formats import serialization_format
-from ..static.configs import images_config
-import binascii
+from source.pcic import O2x5xxPCICDevice
+from source.static.formats import serialization_format, ChunkType
+from source.static.configs import images_config
 import struct
 import io
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import numpy as np
+
+
+SOCKET_TIMEOUT = 10
 
 
 class ImageClient(O2x5xxPCICDevice):
-	def __init__(self, address, port):
-		super(ImageClient, self).__init__(address, port)
+	def __init__(self, address, port, timeout=SOCKET_TIMEOUT):
+		super(ImageClient, self).__init__(address=address, port=port, timeout=timeout)
 
 		# disable all result output
 		self.turn_process_interface_output_on_or_off(0)
@@ -51,9 +54,12 @@ class ImageClient(O2x5xxPCICDevice):
 		ticket, answer = self.read_next_answer()
 
 		if ticket == b"0000":
-			delimiter = str(answer).find('stop')
-			ids = answer[:delimiter-12].decode()
-			return ids.split(';')[1:-1]
+			delimiter = answer.find(b'stop')
+			if delimiter == -1:
+				print("stop identifier not found in result")
+				return []
+			ids = answer[5:delimiter].decode()
+			return ids.split(';')[0:-1]
 
 	@staticmethod
 	def _deserialize_image_chunk(data):
@@ -64,8 +70,7 @@ class ImageClient(O2x5xxPCICDevice):
 		:return: deserialized results
 		"""
 		results = {}
-		length = int(data.__len__())
-		data = binascii.unhexlify(data.hex())
+		length = len(data)
 		counter = 0
 
 		while length:
@@ -80,7 +85,22 @@ class ImageClient(O2x5xxPCICDevice):
 			results.setdefault(counter, []).append(header)
 			# append image
 			image_hex = data[header['HEADER_SIZE']:header['CHUNK_SIZE']]
-			image = mpimg.imread(io.BytesIO(image_hex), format='jpg')
+			chunk_type = int(header['CHUNK_TYPE'])
+			# check end decode image depending on chunk type
+			if chunk_type == ChunkType.JPEG_IMAGE:
+				# Check that we have received chunk type JPEG_IMAGE
+				# Convert jpeg data to image data
+				image = mpimg.imread(io.BytesIO(image_hex), format='jpg')
+				results[counter].append(image)
+			elif chunk_type == ChunkType.MONOCHROME_2D_8BIT:
+				# Check that we have received chunk type MONOCHROME_2D_8BIT
+				# Read pixel data and reshape to width/height
+				image = np.frombuffer(image_hex, dtype=np.uint8) \
+					.reshape((header["IMAGE_HEIGHT"], header["IMAGE_WIDTH"]))
+				results[counter].append(image)
+			else:
+				image = None
+				print("Unknown image chunk type", header['CHUNK_TYPE'])
 			results[counter].append(image)
 
 			length -= header['CHUNK_SIZE']
@@ -100,8 +120,11 @@ class ImageClient(O2x5xxPCICDevice):
 		ticket, answer = self.read_next_answer()
 
 		if ticket == b"0000":
-			delimiter = str(answer).find('stop')
-			result = self._deserialize_image_chunk(data=answer[delimiter-8:])
+			delimiter = answer.find(b'stop')
+			if delimiter == -1:
+				print("stop identifier not found in result")
+				self.frames = []
+			result = self._deserialize_image_chunk(data=answer[delimiter+4:])
 			self.frames = [result[i][1] for i in result]
 
 	def make_figure(self, idx):

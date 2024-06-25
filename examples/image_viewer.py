@@ -17,7 +17,7 @@ if __name__ == '__main__':
         address = '192.168.0.69'
 
     # create grabber
-    image_client = ImageClient(address, 50010)
+    image_client = ImageClient(address=address, port=50010, timeout=None)
 
     # create figures
     figs = [image_client.make_figure(i) for i in range(image_client.number_images)]
