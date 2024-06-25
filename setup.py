@@ -15,7 +15,7 @@ def read_requires():
 
 setup(
     name='o2x5xx',
-    version='0.4.2-pre',
+    version='0.4.3-pre',
     description='A Python library for ifm O2x5xx (O2D5xx / O2I5xx) devices',
     author='Michael Gann',
     author_email='support.efector.object-ident@ifm.com',
