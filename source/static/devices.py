@@ -34,7 +34,7 @@ class DevicesMeta(enum.Enum):
                                 "O2I410", "O2I412", "O2I414",
                                 "O2I400", "O2I420", "O2I402",
                                 "O2I422", "O2I404", "O2I424"],
-              "DeviceType": ["1:319", 0x104],
+              "DeviceType": ["1:260", 0x104],
               "LogicGraphConfigExtension": ".o2xlgc",
               "ApplicationConfigExtension": ".o2i4xxapp",
               "DeviceConfigExtension": ".o2i4xxcfg",
