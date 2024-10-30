@@ -9,6 +9,7 @@ import json
 import io
 import numpy as np
 import matplotlib.image as mpimg
+import warnings
 
 
 SOCKET_TIMEOUT = 10
@@ -81,8 +82,8 @@ class O2x5xxRPCDevice(object):
         result = DevicesMeta.getData(key="DeviceType", value=_deviceType)
         if not result:
             _articleNumber = self.getParameter(value="ArticleNumber")
-            raise TypeError("Device {} with DeviceType {} is not supported by this library!"
-                            .format(_articleNumber, _deviceType))
+            warnings.warn("Device {} with DeviceType {} and IP {} may not be supported by this library!"
+                          .format(_articleNumber, _deviceType, self.address), ResourceWarning)
         return result
 
     def getParameter(self, value: str) -> str:
