@@ -23,7 +23,7 @@ class DevicesMeta(enum.Enum):
     O2I5xx = {"ArticleNumber": ["O2I5xx",
                                 "O2I510", "O2I511", "O2I512",
                                 "O2I513", "O2I514", "O2I500",
-                                "O2I515", "O2I501",  "O2I502",
+                                "O2I515", "O2I501", "O2I502",
                                 "O2I503", "O2I504", "O2I505"],
               "DeviceType": ["1:256", 0x100],
               "LogicGraphConfigExtension": ".o2xlgc",
@@ -38,6 +38,14 @@ class DevicesMeta(enum.Enum):
               "LogicGraphConfigExtension": ".o2xlgc",
               "ApplicationConfigExtension": ".o2i4xxapp",
               "DeviceConfigExtension": ".o2i4xxcfg",
+              "PCICConfigExtension": ".o2xpcic"}
+    O2U5xx = {"ArticleNumber": ["O2U5xx",
+                                "O2U530", "O2U532", "O2U534",
+                                "O2U540", "O2U542", "O2U544"],
+              "DeviceType": ["1:384", 0x180],
+              "LogicGraphConfigExtension": ".o2xlgc",
+              "ApplicationConfigExtension": ".o2u5xxapp",
+              "DeviceConfigExtension": ".o2u5xxcfg",
               "PCICConfigExtension": ".o2xpcic"}
 
     @classmethod
