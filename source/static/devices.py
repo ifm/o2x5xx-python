@@ -47,6 +47,13 @@ class DevicesMeta(enum.Enum):
               "ApplicationConfigExtension": ".o2u5xxapp",
               "DeviceConfigExtension": ".o2u5xxcfg",
               "PCICConfigExtension": ".o2xpcic"}
+    O2C56x = {"ArticleNumber": ["O2C56x",
+                                "O2C560", "O2C562", "O2C564"],
+              "DeviceType": ["1:448", 0x1c0],
+              "LogicGraphConfigExtension": ".o2xlgc",
+              "ApplicationConfigExtension": ".o2c56xapp",
+              "DeviceConfigExtension": ".o2c56xcfg",
+              "PCICConfigExtension": ".o2xpcic"}
 
     @classmethod
     def getData(cls, key, value):
