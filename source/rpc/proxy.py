@@ -149,20 +149,32 @@ class SessionProxy(BaseProxy):
 
         Args:
             mode (int): operating mode
+                0: run mode, 1: edit mode, 2: simulation mode
             timeout (float): Timeout values which is valid for the EditProxy.
             Argument can be a non-negative floating point number expressing seconds, or None.
             If None, SOCKET_TIMEOUT value is used as default
         """
         try:
             self.proxy.setOperatingMode(mode)
-            self.device._editURL = self.baseURL + 'edit/'
-            self.device._editProxy = EditProxy(url=self.device._editURL, device=self.device, timeout=timeout)
-            yield
+            if mode == 1:
+                self.device._editURL = self.baseURL + 'edit/'
+                self.device._editProxy = EditProxy(url=self.device._editURL, device=self.device, timeout=timeout)
+                yield
+            if mode == 2:
+                self.device._simulationURL = self.baseURL + 'simulation/'
+                self.device._simulationProxy = SimulationProxy(url=self.device._simulationURL, device=self.device,
+                                                              timeout=timeout)
+                yield
         finally:
             self.proxy.setOperatingMode(0)
-            self.device._editProxy.close()
-            self.device._editURL = None
-            self.device._editProxy = None
+            if mode == 1:
+                self.device._editProxy.close()
+                self.device._editURL = None
+                self.device._editProxy = None
+            if mode == 2:
+                self.device._simulationProxy.close()
+                self.device._simulationURL = None
+                self.device._simulationProxy = None
 
 
 class EditProxy(BaseProxy):
@@ -234,6 +246,15 @@ class ApplicationProxy(BaseProxy):
 
 class ImagerProxy(BaseProxy):
     """Proxy representing editProxy."""
+
+    def __init__(self, url, device, timeout=SOCKET_TIMEOUT):
+        self.baseURL = url
+        self.device = device
+
+        super().__init__(url, device, timeout)
+
+class SimulationProxy(BaseProxy):
+    """Proxy representing simulation mode."""
 
     def __init__(self, url, device, timeout=SOCKET_TIMEOUT):
         self.baseURL = url

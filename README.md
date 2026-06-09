@@ -202,6 +202,8 @@ must be called to make others available:
         │   └── edit
         ├── startEdit()  
         ├── stopEdit()  
+        ├── startSimulation()  
+        ├── stopSimulation()      
         ├── heartbeat(heartbeatInterval)  
         ├── doAutoHeartbeat()  
         ├── cancelSession()  
@@ -219,7 +221,10 @@ must be called to make others available:
         ├── readApplicationConfigFile(applicationFile)
         ├── readDeviceConfigFile(configFile)
         └── setOperatingMode(mode)  
-            └── Edit (object)
+            └── Simulation (object)  # mode: 2
+                ├── createPayloadList(imagePaths) 
+                ├── processImageSequence(imageSequence, forceTrigger) 
+            └── Edit (object)  # mode: 1
                 ├── @property
                 │   └── application
                 ├── stopEditingApplication() 
@@ -308,3 +313,4 @@ You can run the tests for the PCIC and RPC modules separately with following com
     $ python -m unittest tests/test_imager.py -vvv
     $ python -m unittest tests/test_imageQualityCheck.py -vvv
     $ python -m unittest tests/test_device.py -vvv
+    $ python -m unittest tests/test_simulation.py -vvv
