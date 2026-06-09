@@ -173,9 +173,9 @@ if __name__ == "__main__":
                         payloadList = simulation.createPayloadList(image_paths_ordered)
 
                         # Send the image sequence to the sensor and trigger processing.
-                        # force_trigger=True ensures the pipeline runs even if no
+                        # forceTrigger=True ensures the pipeline runs even if no
                         # external trigger signal is present.
-                        simulation.processImageSequence(image_sequence=payloadList, force_trigger=True)
+                        simulation.processImageSequence(imageSequence=payloadList, forceTrigger=True)
 
                         # Read the application result returned by the sensor via PCIC.
                         # The sensor is configured to output results in the format:
