@@ -1,38 +1,36 @@
 import xmlrpc.client
 
-
 class Simulation(object):
     """
     Simulation Mode object
     """
 
-    def __init__(self, editURL, sessionAPI, mainAPI):
-        self.url = editURL
-        self.sessionAPI = sessionAPI
-        self.mainAPI = mainAPI
-        self.rpc = xmlrpc.client.ServerProxy(self.url)
+    def __init__(self, simulationProxy, device):
+        self._simulationProxy = simulationProxy
+        self._device = device
 
     @staticmethod
-    def createPayloadList(image_paths: [str, list]) -> list:
+    def createPayloadList(imagePaths: list = [str, list]) -> list:
         """
-        TODO
+        Creates a list of xmlrpc.client.Binary objects from a list of image paths or a single image path.
+        The images should be in the format as generated in the service report (JPEG, 1280 x 960, grayscale 8 bit).
 
-        :param image_paths:
+        :param imagePaths: list of image paths or a single image path
         :return:
         """
         payloadList = []
-        if isinstance(image_paths, list):
-            for path in image_paths:
+        if isinstance(imagePaths, list):
+            for path in imagePaths:
                 with open(r"{p}".format(p=path), "rb") as fh:
                     buf = fh.read()
                     payloadList.append(xmlrpc.client.Binary(buf))
         else:
-            with open(r"{p}".format(p=image_paths), "rb") as fh:
+            with open(r"{p}".format(p=imagePaths), "rb") as fh:
                 buf = fh.read()
                 payloadList.append(xmlrpc.client.Binary(buf))
         return payloadList
 
-    def processImageSequence(self, image_sequence: list, force_trigger: bool) -> None:
+    def processImageSequence(self, imageSequence: list, forceTrigger: bool = True) -> None:
         """
         Sends an Image Sequence and decode them.
         An additional parameter exists to define if a software trigger should be generated.
@@ -49,8 +47,4 @@ class Simulation(object):
 
         :return: None
         """
-        self.rpc.processImageSequence(image_sequence, force_trigger)
-
-    def __getattr__(self, name):
-        # Forward otherwise undefined method calls to XMLRPC proxy
-        return getattr(self.rpc, name)
+        self._simulationProxy.proxy.processImageSequence(imageSequence, forceTrigger)

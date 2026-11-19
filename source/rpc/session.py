@@ -6,6 +6,7 @@ import os
 import base64
 from .edit import Edit
 from .proxy import EditProxy
+from .proxy import SimulationProxy
 
 
 class Session(object):
@@ -40,15 +41,38 @@ class Session(object):
         self._device._editURL = None
         self._device._editProxy = None
 
-    def setOperatingMode(self, mode) -> [None, Edit]:
+    def startSimulation(self) -> None:
+        """
+        Starting the simulation mode and requesting a Simulation object.
+
+        :return:
+        """
+        self.setOperatingMode(2)
+        _simulationURL = self._sessionProxy.baseURL + 'simulation/'
+        setattr(self._device, "_simulationURL", _simulationURL)
+        simulationProxy = SimulationProxy(url=_simulationURL, device=self._device)
+        setattr(self._device, "_simulationProxy", simulationProxy)
+        return self._device.simulation
+    
+    def stopSimulation(self) -> None:
+        """
+        Stopping the simulation mode.
+
+        :return: None
+        """
+        self.setOperatingMode(0)
+        self._device._simulationURL = None
+        self._device._simulationProxy = None
+
+    def setOperatingMode(self, mode) -> None:
         """
         Changes the operation mode of the device. Setting this to "edit" will enable the "EditMode"-object on RPC.
 
         :param mode: 1 digit
                      0: run mode
                      1: edit mode
-                     2: simulation mode (Not implemented!)
-        :return: None or Edit object
+                     2: simulation mode
+        :return: None
         """
         self._sessionProxy.proxy.setOperatingMode(mode)
 

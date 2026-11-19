@@ -1,5 +1,7 @@
-from .proxy import MainProxy, SessionProxy, EditProxy, ApplicationProxy, ImagerProxy
+from typing import LiteralString
+from .proxy import MainProxy, SessionProxy, EditProxy, ApplicationProxy, ImagerProxy, SimulationProxy
 from .session import Session
+from .simulation import Simulation
 from .edit import Edit
 from .application import Application
 from .imager import Imager
@@ -38,13 +40,14 @@ class O2x5xxRPCDevice(object):
     @property
     def sessionProxy(self) -> SessionProxy:
         return getattr(self, "_sessionProxy")
+    
+    @property
+    def simulationProxy(self) -> SimulationProxy:
+        return getattr(self, "_simulationProxy")
 
     @property
-    def editProxy(self) -> [EditProxy, None]:
-        try:
-            return getattr(self, "_editProxy")
-        except AttributeError:
-            return None
+    def editProxy(self) -> EditProxy:
+        return getattr(self, "_editProxy")
 
     @property
     def applicationProxy(self) -> ApplicationProxy:
@@ -58,6 +61,17 @@ class O2x5xxRPCDevice(object):
     def session(self) -> Session:
         if self.sessionProxy:
             return Session(sessionProxy=self.sessionProxy, device=self)
+        else:
+            raise AttributeError("No sessionProxy available! Please first create a sessionProxy "
+                                 f"Checkout the parametrization structure here: \n {self._getParametrizationStructure()}.")
+
+    @property
+    def simulation(self) -> Simulation:
+        if self.simulationProxy:
+            return Simulation(simulationProxy=self.simulationProxy, device=self)
+        else:
+            raise AttributeError("No simulationProxy available! Please first create a simulationProxy "
+                                 f"Checkout the parametrization structure here: \n {self._getParametrizationStructure()}.")
 
     @property
     def edit(self) -> Edit:
@@ -65,18 +79,38 @@ class O2x5xxRPCDevice(object):
             return Edit(editProxy=self.editProxy,  device=self)
         else:
             raise AttributeError("No editProxy available! Please first create an editProxy "
-                                 "with method self.device.session.requestOperatingMode(Mode=1) before using Edit!")
+                                 f"Checkout the parametrization structure here: \n {self._getParametrizationStructure()}.")
 
     @property
     def application(self) -> Application:
         if self.applicationProxy:
             return Application(applicationProxy=self.applicationProxy, device=self)
+        else:
+            raise AttributeError("No applicationProxy available! Please first create an applicationProxy "
+                                 f"Checkout the parametrization structure here: \n {self._getParametrizationStructure()}.")
 
     @property
     def imager(self) -> Imager:
         if self.imagerProxy:
             return Imager(imagerProxy=self.imagerProxy, device=self)
+        else:
+            raise AttributeError("No imagerProxy available! Please first create an imagerProxy "
+                                 f"Checkout the parametrization structure here: \n {self._getParametrizationStructure()}.")
 
+    def _getParametrizationStructure(self) -> LiteralString:
+        structure = """
+        # Main API (object) (O2x5xxRPCDevice)
+        # └── requestSession(password, sessionID)
+        #     └── Session (object)
+        #         └── setOperatingMode(mode)  
+        #             └── Edit (object)
+        #                 └── editApplication(applicationIndex) 
+        #                     └── Application (object)
+        #                         └── editImage(imageIndex)
+        #                             └── Imager (object)
+        """
+        return structure
+    
     def _getDeviceMeta(self):
         _deviceType = self.getParameter(value="DeviceType")
         result = DevicesMeta.getData(key="DeviceType", value=_deviceType)

@@ -7,8 +7,8 @@ def getImportSetupByPinLayout(rpc):
         config_file_path = os.path.join(os.getcwd(), "deviceConfig")
         app_import_file_path = os.path.join(os.getcwd(), "deviceConfig", "UnittestApplicationImport.o2d5xxapp")
     else:
-        config_file_path = os.path.join(os.getcwd(), "tests", "deviceConfig")
-        app_import_file_path = os.path.join(os.getcwd(), "tests", "deviceConfig", "UnittestApplicationImport.o2d5xxapp")
+        config_file_path = os.path.join(os.getcwd(), "tests", "resources", "deviceConfig")
+        app_import_file_path = os.path.join(os.getcwd(), "tests", "resources", "UnittestApplicationImport.o2d5xxapp")
     if pin_layout == 3:
         result = {'config_file': os.path.join(config_file_path, "Unittest8PolDeviceConfig.o2d5xxcfg"),
                   'app_import_file': app_import_file_path}
